@@ -9,7 +9,6 @@ if [ ! -d "backend/venv" ]; then
     python3 -m venv venv
     cd ..
 fi
-
 # Activate virtual environment and install Python requirements
 echo "📥 Installing Python dependencies..."
 source backend/venv/bin/activate

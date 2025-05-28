@@ -13,12 +13,14 @@ from config import (
 from audiohandler import AudioHandler
 from transcriptions import Transcriber
 from llm_handler import LLMHandler
+from websearch_handler import WebSearchHandler
 
 app = Flask(__name__)
 CORS(app)
 
 # Global state
 ai_mode_active = False
+websearch_mode_active = False
 latest_transcription = ""
 latest_response = ""
 
@@ -26,9 +28,10 @@ latest_response = ""
 audio_handler = AudioHandler()
 transcriber = Transcriber()
 llm_handler = LLMHandler()
+websearch_handler = WebSearchHandler()
 
 def main_loop():
-    global ai_mode_active, latest_transcription, latest_response
+    global ai_mode_active, websearch_mode_active, latest_transcription, latest_response
     buffer = np.zeros((0, 1), dtype='int16')
     
     while not audio_handler.stop_flag.is_set():
@@ -52,16 +55,33 @@ def main_loop():
                 latest_transcription = transcription
                 console.print(f"🗣️ You said: {transcription}", style="bold blue")
                 
+                
                 if "ai mode" in transcription.lower():
                     ai_mode_active = True
+                    websearch_mode_active = False
                     latest_response = "AI mode activated"
                     continue
                 elif "transcription mode" in transcription.lower():
                     ai_mode_active = False
+                    websearch_mode_active = False
                     latest_response = "Transcription mode activated"
                     continue
-                    
-                if ai_mode_active:
+                elif "web search mode" in transcription.lower():
+                    ai_mode_active = False
+                    websearch_mode_active = True
+                    latest_response = "Web search mode activated"
+                    continue
+                
+                if websearch_mode_active:
+                    if transcription.strip().endswith('?'):
+                        response = websearch_handler.search(transcription)
+                        if response:
+                            latest_response = response
+                            console.print(f"🌐 Web search replied: {response}", style="bold cyan")
+                    else:
+                        latest_response = "Please end your search query with a question mark (?)"
+                        console.print(f"ℹ️ Hint: {latest_response}", style="bold yellow")
+                elif ai_mode_active:
                     response = llm_handler.get_response(transcription)
                     if response:
                         latest_response = response
@@ -76,10 +96,11 @@ def index():
 
 @app.route("/status")
 def status():
+    mode = "WebSearch" if websearch_mode_active else "AI" if ai_mode_active else "Transcription"
     return jsonify({
-        "mode": "AI" if ai_mode_active else "Transcription",
+        "mode": mode,
         "transcription": latest_transcription,
-        "response": latest_response if ai_mode_active else ""
+        "response": latest_response if (websearch_mode_active or ai_mode_active) else ""
     })
 
 if __name__ == "__main__":

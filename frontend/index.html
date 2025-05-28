@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="UTF-8" />
-    <title>Siri Max Pro</title>
+    <title>KnowledgeOS</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="styles/global.css" />
   </head>
@@ -90,8 +90,8 @@
             currentMode = data.mode;
             modeIndicator.textContent = data.mode.toUpperCase();
             
-            // Add listening animation for AI mode
-            if (data.mode === 'AI') {
+            // Add listening animation for AI and Web Search modes
+            if (data.mode === 'AI' || data.mode === 'WebSearch') {
               siriOrb.classList.add('listening');
             } else {
               siriOrb.classList.remove('listening');
@@ -108,9 +108,11 @@
           }
 
           // Update response
-          if (data.mode === "AI" && data.response) {
+          if (data.response && (data.mode === "AI" || data.mode === "WebSearch")) {
             responseEl.textContent = data.response;
             responseEl.style.display = 'block';
+            // Add different styling for web search responses
+            responseEl.className = `response ${data.mode.toLowerCase()}-response`;
           } else {
             responseEl.style.display = 'none';
           }
@@ -135,7 +137,7 @@
 
       // Initialize
       fetchStatus();
-      setInterval(fetchStatus, 2000);
+      setInterval(fetchStatus, 3000);
 
       // Add click interaction to orb (still toggles theme)
       siriOrb.addEventListener('click', () => {
