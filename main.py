@@ -1,3 +1,4 @@
+from flask import Flask, render_template, jsonify, request
 import torch
 import numpy as np
 import sounddevice as sd
@@ -11,6 +12,12 @@ from dotenv import load_dotenv
 from rich.console import Console
 from rich.text import Text
 from groq import Groq
+
+from flask_cors import CORS  # ✅ NEW
+
+# Flask App Setup
+app = Flask(__name__)
+CORS(app)  # ✅ Allow any origin
 
 # Initialize Rich Console
 console = Console()
@@ -38,17 +45,20 @@ GROQ_MODEL_NAME = "meta-llama/llama-4-maverick-17b-128e-instruct"
 
 # Audio parameters
 SAMPLE_RATE = 16000
-CHUNK_DURATION = 4  # seconds
-OVERLAP_DURATION = 2  # seconds
+CHUNK_DURATION = 4
+OVERLAP_DURATION = 2
 CHUNK_SAMPLES = SAMPLE_RATE * CHUNK_DURATION
 OVERLAP_SAMPLES = SAMPLE_RATE * OVERLAP_DURATION
 
+# Global vars
 audio_queue = queue.Queue()
 stop_flag = threading.Event()
-
-# Conversation history for AI mode
 message_history = []
+ai_mode_active = False
+latest_transcription = ""
+latest_response = ""
 
+# Audio callback
 def audio_callback(indata, frames, time_info, status):
     if status:
         console.print(f"[AUDIO WARNING] {status}", style="bold yellow")
@@ -68,35 +78,23 @@ def recorder_thread():
         stop_flag.set()
 
 def transcribe_audio(audio_data):
-    inputs = whisper_processor(
-        audio=audio_data,
-        sampling_rate=SAMPLE_RATE,
-        return_tensors="pt"
-    )
+    inputs = whisper_processor(audio=audio_data, sampling_rate=SAMPLE_RATE, return_tensors="pt")
     input_features = inputs.input_features.to(device)
     with torch.no_grad():
-        ids = whisper_model.generate(
-            input_features,
-            # forced_decoder_ids=whisper_processor.get_decoder_prompt_ids(
-            #     language="en",
-            #     task="transcribe"
-            #)
-        )
-        transcription = whisper_processor.batch_decode(ids, skip_special_tokens=True)[0].strip()
-    return transcription
+        ids = whisper_model.generate(input_features)
+        return whisper_processor.batch_decode(ids, skip_special_tokens=True)[0].strip()
 
 def get_groq_response(prompt):
+    global message_history
     message_history.append({"role": "user", "content": prompt})
-    trimmed_history = []
-    user_msgs = [m for m in message_history if m["role"] == "user"]
-    assistant_msgs = [m for m in message_history if m["role"] == "assistant"]
-    trimmed_history.extend(user_msgs[-2:])
-    if assistant_msgs:
-        trimmed_history.insert(1, assistant_msgs[-1])
+    trimmed = [m for m in message_history if m["role"] == "user"][-2:]
+    assistant = [m for m in message_history if m["role"] == "assistant"]
+    if assistant:
+        trimmed.insert(1, assistant[-1])
     try:
         completion = client.chat.completions.create(
             model=GROQ_MODEL_NAME,
-            messages=trimmed_history,
+            messages=trimmed,
             max_tokens=100
         )
         reply = completion.choices[0].message.content.strip()
@@ -107,9 +105,8 @@ def get_groq_response(prompt):
         return None
 
 def main_loop():
+    global ai_mode_active, latest_transcription, latest_response
     buffer = np.zeros((0, 1), dtype='int16')
-    ai_mode_active = False
-    console.print("[bold yellow]Say 'ai mode' to enable LLM, 'transcription mode' to disable it.[/bold yellow]")
     while not stop_flag.is_set():
         try:
             while buffer.shape[0] < CHUNK_SAMPLES and not stop_flag.is_set():
@@ -117,48 +114,51 @@ def main_loop():
                     chunk = audio_queue.get(timeout=0.1)
                     buffer = np.concatenate((buffer, chunk), axis=0)
                 except queue.Empty:
-                    if stop_flag.is_set():
-                        break
                     continue
             if stop_flag.is_set():
                 break
             current_chunk = buffer[:CHUNK_SAMPLES + OVERLAP_SAMPLES]
             buffer = buffer[-OVERLAP_SAMPLES:]
             audio_data = current_chunk.astype(np.float32) / 32768.0
-            audio_data = audio_data.flatten()
-            transcription = transcribe_audio(audio_data)
-            if transcription and transcription != '.':
+            transcription = transcribe_audio(audio_data.flatten())
+            if transcription and transcription != ".":
+                latest_transcription = transcription
                 console.print(Text(f"🗣️ You said: {transcription}", style="bold blue"))
-                # Mode switching by voice
                 if "ai mode" in transcription.lower():
                     ai_mode_active = True
-                    console.print("[bold magenta]AI mode activated![/bold magenta]")
+                    latest_response = "AI mode activated"
                     continue
                 elif "transcription mode" in transcription.lower():
                     ai_mode_active = False
-                    console.print("[bold cyan]Transcription mode activated![/bold cyan]")
+                    latest_response = "Transcription mode activated"
                     continue
-                # If in AI mode, send to LLM
                 if ai_mode_active:
-                    groq_response = get_groq_response(transcription)
-                    if groq_response is not None:
-                        console.print(Text(f"🤖 Groq replied: {groq_response}", style="bold magenta"))
+                    response = get_groq_response(transcription + "limit: 100 words")
+                    if response:
+                        latest_response = response
+                        console.print(Text(f"🤖 Groq replied: {response}", style="bold magenta"))
         except Exception as e:
             console.print(f"[ERROR] Main loop failed: {e}", style="bold red")
-            time.sleep(1)
+
+@app.route("/")
+def index():
+    return render_template("index.html")
+
+@app.route("/status")
+def status():
+    # Log all incoming request headers for debugging
+    console.print("=== Incoming Request Headers ===", style="bold cyan")
+    for header, value in request.headers.items():
+        console.print(f"{header}: {value}", style="cyan")
+    console.print("================================", style="bold cyan")
+
+    return jsonify({
+        "mode": "AI" if ai_mode_active else "Transcription",
+        "transcription": latest_transcription,
+        "response": latest_response if ai_mode_active else ""
+    })
 
 if __name__ == "__main__":
-    if not GROQ_API_KEY:
-        sys.exit(1)
-    try:
-        recorder_thread_instance = threading.Thread(target=recorder_thread, daemon=True)
-        recorder_thread_instance.start()
-        main_loop()
-    except KeyboardInterrupt:
-        console.print("👋 Stopping...", style="bold yellow")
-        stop_flag.set()
-    except Exception as e:
-        console.print(f"[FATAL ERROR] Main application failed: {e}", style="bold red")
-    finally:
-        stop_flag.set()
-        console.print("✅ Shutdown complete.", style="bold green")
+    threading.Thread(target=recorder_thread, daemon=True).start()
+    threading.Thread(target=main_loop, daemon=True).start()
+    app.run(host="0.0.0.0", port=5001)
