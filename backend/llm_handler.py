@@ -17,7 +17,7 @@ class LLMHandler:
             completion = self.client.chat.completions.create(
                 model=GROQ_MODEL_NAME,
                 messages=trimmed,
-                max_tokens=100
+                max_tokens=512
             )
             reply = completion.choices[0].message.content.strip()
             self.message_history.append({"role": "assistant", "content": reply})

@@ -62,7 +62,7 @@ def main_loop():
                     continue
                     
                 if ai_mode_active:
-                    response = llm_handler.get_response(transcription + "limit: 100 words")
+                    response = llm_handler.get_response(transcription)
                     if response:
                         latest_response = response
                         console.print(f"🤖 Groq replied: {response}", style="bold magenta")
