@@ -6,40 +6,52 @@ import threading
 import time
 import os
 import sys
-import tkinter as tk
-from tkinter.scrolledtext import ScrolledText
 from transformers import AutoProcessor, AutoModelForSpeechSeq2Seq
 from dotenv import load_dotenv
+from rich.console import Console
+from rich.text import Text
 from groq import Groq
+
+# Initialize Rich Console
+console = Console()
 
 # Load environment variables from .env file
 load_dotenv()
 
+# Setup devices
 device = "cuda:0" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
 
+# Setup Whisper
 WHISPER_MODEL_ID = "openai/whisper-large-v3-turbo"
 whisper_processor = AutoProcessor.from_pretrained(WHISPER_MODEL_ID)
 whisper_model = AutoModelForSpeechSeq2Seq.from_pretrained(WHISPER_MODEL_ID).to(device)
 
+# --- Groq API Setup ---
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
 if not GROQ_API_KEY:
-    print("[FATAL ERROR] GROQ_API_KEY environment variable not set.")
+    console.print("[FATAL ERROR] GROQ_API_KEY environment variable not set.", style="bold red")
     sys.exit(1)
 
 client = Groq(api_key=GROQ_API_KEY)
 GROQ_MODEL_NAME = "meta-llama/llama-4-maverick-17b-128e-instruct"
+# ----------------------
 
+# Audio parameters
 SAMPLE_RATE = 16000
-CHUNK_DURATION = 4
-OVERLAP_DURATION = 2
+CHUNK_DURATION = 4  # seconds
+OVERLAP_DURATION = 2  # seconds
 CHUNK_SAMPLES = SAMPLE_RATE * CHUNK_DURATION
 OVERLAP_SAMPLES = SAMPLE_RATE * OVERLAP_DURATION
 
 audio_queue = queue.Queue()
 stop_flag = threading.Event()
+
+# Conversation history for AI mode
 message_history = []
 
 def audio_callback(indata, frames, time_info, status):
+    if status:
+        console.print(f"[AUDIO WARNING] {status}", style="bold yellow")
     if indata.shape[1] > 1:
         indata = indata.mean(axis=1, keepdims=True)
     audio_queue.put(indata.copy())
@@ -48,10 +60,11 @@ def recorder_thread():
     try:
         with sd.InputStream(samplerate=SAMPLE_RATE, channels=1, dtype='int16',
                             callback=audio_callback, blocksize=CHUNK_SAMPLES):
+            console.print("🎙️  Recording... Press Ctrl+C to stop.", style="bold green")
             while not stop_flag.is_set():
                 time.sleep(0.1)
     except Exception as e:
-        print(f"[ERROR] Audio stream failed: {e}")
+        console.print(f"[ERROR] Audio stream failed: {e}", style="bold red")
         stop_flag.set()
 
 def transcribe_audio(audio_data):
@@ -67,7 +80,7 @@ def transcribe_audio(audio_data):
             # forced_decoder_ids=whisper_processor.get_decoder_prompt_ids(
             #     language="en",
             #     task="transcribe"
-            # )
+            #)
         )
         transcription = whisper_processor.batch_decode(ids, skip_special_tokens=True)[0].strip()
     return transcription
@@ -90,62 +103,13 @@ def get_groq_response(prompt):
         message_history.append({"role": "assistant", "content": reply})
         return reply
     except Exception as e:
-        return f"[ERROR] Groq API request failed: {e}"
+        console.print(f"[ERROR] Groq API request failed: {e}", style="bold red")
+        return None
 
-# --- GUI code ---
-class App:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("KnowledgeOS Voice GUI")
-        self.text = ScrolledText(root, wrap=tk.WORD, width=80, height=30, font=("Menlo", 12))
-        self.text.pack(expand=True, fill=tk.BOTH)
-        self.text.config(state=tk.DISABLED)
-        self.root.protocol("WM_DELETE_WINDOW", self.on_close)
-        self.pulse_active = False
-        self.pulse_state = False
-        self.default_bg = self.root.cget("bg")
-        self.pulse_colors = ["#ffe6f7", "#e0c3fc"]  # Soft pulsing colors
-
-        self.thread = threading.Thread(target=main_loop, args=(self.print_to_gui, self), daemon=True)
-        self.thread.start()
-        self.recorder_thread = threading.Thread(target=recorder_thread, daemon=True)
-        self.recorder_thread.start()
-
-    def print_to_gui(self, msg):
-        def append():
-            self.text.config(state=tk.NORMAL)
-            self.text.insert(tk.END, msg)
-            self.text.see(tk.END)
-            self.text.config(state=tk.DISABLED)
-        self.root.after(0, append)
-
-    def start_pulse(self):
-        if not self.pulse_active:
-            self.pulse_active = True
-            self._pulse()
-
-    def stop_pulse(self):
-        self.pulse_active = False
-        self.root.configure(bg=self.default_bg)
-        self.text.configure(bg=self.default_bg)
-
-    def _pulse(self):
-        if self.pulse_active:
-            color = self.pulse_colors[self.pulse_state]
-            self.root.configure(bg=color)
-            self.text.configure(bg=color)
-            self.pulse_state = not self.pulse_state
-            self.root.after(500, self._pulse)  # Change color every 500ms
-
-    def on_close(self):
-        stop_flag.set()
-        self.root.destroy()
-
-# Modify main_loop to accept the app instance and control pulsing
-def main_loop(gui_callback, app):
+def main_loop():
     buffer = np.zeros((0, 1), dtype='int16')
     ai_mode_active = False
-    gui_callback("Say 'ai mode' to enable LLM, 'transcription mode' to disable it.\n")
+    console.print("[bold yellow]Say 'ai mode' to enable LLM, 'transcription mode' to disable it.[/bold yellow]")
     while not stop_flag.is_set():
         try:
             while buffer.shape[0] < CHUNK_SAMPLES and not stop_flag.is_set():
@@ -164,30 +128,37 @@ def main_loop(gui_callback, app):
             audio_data = audio_data.flatten()
             transcription = transcribe_audio(audio_data)
             if transcription and transcription != '.':
-                gui_callback(f"🗣️ You said: {transcription}\n")
+                console.print(Text(f"🗣️ You said: {transcription}", style="bold blue"))
                 # Mode switching by voice
                 if "ai mode" in transcription.lower():
                     ai_mode_active = True
-                    gui_callback("[AI mode activated!]\n")
-                    app.start_pulse()  # Start pulsing background
+                    console.print("[bold magenta]AI mode activated![/bold magenta]")
                     continue
                 elif "transcription mode" in transcription.lower():
                     ai_mode_active = False
-                    gui_callback("[Transcription mode activated!]\n")
-                    app.stop_pulse()  # Stop pulsing background
+                    console.print("[bold cyan]Transcription mode activated![/bold cyan]")
                     continue
                 # If in AI mode, send to LLM
                 if ai_mode_active:
                     groq_response = get_groq_response(transcription)
                     if groq_response is not None:
-                        gui_callback(f"🤖 Groq replied: {groq_response}\n")
+                        console.print(Text(f"🤖 Groq replied: {groq_response}", style="bold magenta"))
         except Exception as e:
-            gui_callback(f"[ERROR] Main loop failed: {e}\n")
+            console.print(f"[ERROR] Main loop failed: {e}", style="bold red")
             time.sleep(1)
 
 if __name__ == "__main__":
     if not GROQ_API_KEY:
         sys.exit(1)
-    root = tk.Tk()
-    app = App(root)
-    root.mainloop()
+    try:
+        recorder_thread_instance = threading.Thread(target=recorder_thread, daemon=True)
+        recorder_thread_instance.start()
+        main_loop()
+    except KeyboardInterrupt:
+        console.print("👋 Stopping...", style="bold yellow")
+        stop_flag.set()
+    except Exception as e:
+        console.print(f"[FATAL ERROR] Main application failed: {e}", style="bold red")
+    finally:
+        stop_flag.set()
+        console.print("✅ Shutdown complete.", style="bold green")
