@@ -30,6 +30,15 @@ KnowledgeOS/
 
 ## Setup
 
+1. run the start script in your terminal
+```bash
+start.sh 
+```
+
+(but if this does not work)
+
+or 
+
 1. Install Python dependencies:
 ```bash
 cd backend

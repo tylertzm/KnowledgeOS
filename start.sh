@@ -1,5 +1,34 @@
 #!/bin/bash
 
+# Colors for terminal output
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
+echo -e "${BLUE}🚀 Starting KnowledgeOS...${NC}"
+
+# Function to check if a command exists
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
+
+# Check for required commands
+if ! command_exists python3; then
+    echo -e "${RED}Error: python3 is not installed${NC}"
+    exit 1
+fi
+
+if ! command_exists node; then
+    echo -e "${RED}Error: node is not installed${NC}"
+    exit 1
+fi
+
+if ! command_exists npm; then
+    echo -e "${RED}Error: npm is not installed${NC}"
+    exit 1
+fi
+
 echo "🚀 Starting KnowledgeOS setup and launch..."
 
 # Check if Python virtual environment exists

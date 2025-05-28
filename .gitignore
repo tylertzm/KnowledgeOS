@@ -1,5 +1,72 @@
+# Environment variables
 .env
-venv
+.env.local
+.env.*
+
+# Python
+venv/
 __pycache__/
-.wav
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+*.egg
+.pytest_cache/
+
+# Audio files
+*.wav
+*.mp3
+*.ogg
+
+# Node.js
 node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+build/
+dist/
+coverage/
+
+# TypeScript
+*.tsbuildinfo
+
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Logs and databases
+*.log
+*.sqlite
+*.sqlite3
+*.db
+
+# Build and distribution
+/frontend/build/
+/frontend/dist/
+/backend/dist/
+*.spec
+
+# Cache directories
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+.temp/
