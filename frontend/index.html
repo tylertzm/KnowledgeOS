@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>KnowingOS</title>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+      
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+        color: white;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        overflow: hidden;
+        position: relative;
+      }
+
+      /* Animated background particles */
+      .particles {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 1;
+      }
+
+      .particle {
+        position: absolute;
+        background: rgba(79, 195, 247, 0.1);
+        border-radius: 50%;
+        animation: float 8s infinite ease-in-out;
+      }
+
+      @keyframes float {
+        0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.1; }
+        50% { transform: translateY(-20px) rotate(180deg); opacity: 0.3; }
+      }
+
+      /* Glass morphism container */
+      .container {
+        position: relative;
+        z-index: 10;
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 30px;
+        padding: 3rem;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+        text-align: center;
+        min-width: 400px;
+        width: 80vw;
+        height: 80vh;
+        transition: all 0.3s ease;
+      }
+
+      .container:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 35px 70px rgba(0, 0, 0, 0.4);
+      }
+
+      h1 {
+        font-size: 2rem;
+        font-weight: 300;
+        margin-bottom: 2rem;
+        background: linear-gradient(45deg, #4fc3f7, #00bcd4, #26c6da);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        letter-spacing: 2px;
+      }
+
+      /* Multi-layered pulse animation */
+      .pulse-container {
+        position: relative;
+        margin: 2rem 0;
+      }
+
+      .pulse {
+        width: 120px;
+        height: 120px;
+        background: radial-gradient(circle at 30% 30%, #4fc3f7, #0288d1, #01579b);
+        border-radius: 50%;
+        animation: main-pulse 2s infinite ease-in-out;
+        box-shadow: 
+          0 0 40px rgba(79, 195, 247, 0.6),
+          inset 0 0 40px rgba(255, 255, 255, 0.1);
+        position: relative;
+        z-index: 3;
+      }
+
+      .pulse::before {
+        content: '';
+        position: absolute;
+        top: -10px;
+        left: -10px;
+        right: -10px;
+        bottom: -10px;
+        background: radial-gradient(circle, rgba(79, 195, 247, 0.3), transparent 70%);
+        border-radius: 50%;
+        animation: outer-pulse 2s infinite ease-in-out;
+        z-index: 1;
+      }
+
+      .pulse::after {
+        content: '';
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        right: 20px;
+        bottom: 20px;
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.2));
+        border-radius: 50%;
+        animation: inner-glow 3s infinite ease-in-out;
+        z-index: 4;
+      }
+
+      @keyframes main-pulse {
+        0% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.1); opacity: 0.8; }
+        100% { transform: scale(1); opacity: 1; }
+      }
+
+      @keyframes outer-pulse {
+        0% { transform: scale(1); opacity: 0.6; }
+        50% { transform: scale(1.3); opacity: 0.2; }
+        100% { transform: scale(1.5); opacity: 0; }
+      }
+
+      @keyframes inner-glow {
+        0%, 100% { opacity: 0.3; transform: scale(1); }
+        50% { opacity: 0.8; transform: scale(1.2); }
+      }
+
+      /* Elegant info display */
+      #info {
+        margin-top: 2rem;
+        font-size: 1.1rem;
+        color: rgba(255, 255, 255, 0.9);
+        max-width: 90%;
+        text-align: left;
+        white-space: pre-wrap;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 15px;
+        padding: 1.5rem;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        font-family: 'Inter', monospace;
+        line-height: 1.6;
+        backdrop-filter: blur(10px);
+      }
+
+      .status {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        background: rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(10px);
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        transition: all 0.3s ease;
+      }
+
+      /* Neural network lines */
+      .neural-bg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 2;
+      }
+
+      .neural-line {
+        position: absolute;
+        background: linear-gradient(90deg, transparent, rgba(79, 195, 247, 0.3), transparent);
+        height: 1px;
+        animation: neural-flow 4s infinite linear;
+      }
+
+      @keyframes neural-flow {
+        0% { transform: translateX(-100%); opacity: 0; }
+        50% { opacity: 1; }
+        100% { transform: translateX(100vw); opacity: 0; }
+      }
+
+      /* Responsive design */
+      @media (max-width: 768px) {
+        .container {
+          min-width: 90vw;
+          padding: 2rem;
+        }
+        
+        h1 {
+          font-size: 1.5rem;
+        }
+        
+        .pulse {
+          width: 100px;
+          height: 100px;
+        }
+      }
+
+      /* Loading animation for text */
+      .loading-text {
+        animation: loading-fade 1.5s infinite ease-in-out;
+      }
+
+      @keyframes loading-fade {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+      }
+
+      /* Success/Error states */
+      .status.connected {
+        background: rgba(76, 175, 80, 0.2);
+        color: #4caf50;
+        border-color: rgba(76, 175, 80, 0.3);
+      }
+
+      .status.error {
+        background: rgba(244, 67, 54, 0.2);
+        color: #f44336;
+        border-color: rgba(244, 67, 54, 0.3);
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Animated background particles -->
+    <div class="particles" id="particles"></div>
+    
+    <!-- Neural network background -->
+    <div class="neural-bg" id="neural-bg"></div>
+
+    <!-- Status indicator -->
+    <div id="status" class="status">◦ Initializing</div>
+
+    <!-- Main container -->
+    <div class="container">
+      <h1>⚡ KnowingOS</h1>
+      
+      <div class="pulse-container">
+        <div class="pulse"></div>
+      </div>
+      
+      <p id="info" class="loading-text">Establishing connection...</p>
+    </div>
+
+    <script>
+      const apiUrl = 'http://192.168.0.150:5001/status';
+      const statusElement = document.getElementById('status');
+      const infoElement = document.getElementById('info');
+      
+      let isConnected = false;
+      let connectionAttempts = 0;
+
+      // Create floating particles
+      function createParticles() {
+        const particlesContainer = document.getElementById('particles');
+        for (let i = 0; i < 15; i++) {
+          const particle = document.createElement('div');
+          particle.className = 'particle';
+          particle.style.left = Math.random() * 100 + '%';
+          particle.style.top = Math.random() * 100 + '%';
+          particle.style.width = (Math.random() * 4 + 2) + 'px';
+          particle.style.height = particle.style.width;
+          particle.style.animationDelay = Math.random() * 8 + 's';
+          particle.style.animationDuration = (Math.random() * 6 + 4) + 's';
+          particlesContainer.appendChild(particle);
+        }
+      }
+
+      // Create neural network lines
+      function createNeuralLines() {
+        const neuralBg = document.getElementById('neural-bg');
+        for (let i = 0; i < 5; i++) {
+          const line = document.createElement('div');
+          line.className = 'neural-line';
+          line.style.top = Math.random() * 100 + '%';
+          line.style.width = '200px';
+          line.style.animationDelay = Math.random() * 4 + 's';
+          line.style.animationDuration = (Math.random() * 3 + 3) + 's';
+          neuralBg.appendChild(line);
+        }
+      }
+
+      async function fetchStatus() {
+        try {
+          connectionAttempts++;
+          statusElement.textContent = '◦ Connecting...';
+          statusElement.className = 'status';
+          
+          const response = await fetch(apiUrl, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+          
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+          
+          const data = await response.json();
+
+          // Build elegant display string
+          let displayText = '';
+          displayText += `🔊 Mode: ${data.mode}\n\n`;
+          displayText += `📝 Transcription:\n   ${data.transcription || "Waiting for input..."}\n\n`;
+          
+          if (data.mode === "AI" && data.response) {
+            displayText += `🤖 Response:\n   ${data.response}`;
+          }
+
+          // Update display
+          infoElement.textContent = displayText;
+          infoElement.classList.remove('loading-text');
+          statusElement.textContent = '● CONNECTED';
+          statusElement.className = 'status connected';
+          
+          if (!isConnected) {
+            isConnected = true;
+            console.log('🚀 Connected to Neural Interface');
+          }
+          
+          console.log('Status data:', data);
+          
+        } catch (error) {
+          console.error('Connection error:', error);
+          infoElement.textContent = `⚠️ Connection Failed\n\nAttempt: ${connectionAttempts}\nError: ${error.message}\n\nRetrying...`;
+          infoElement.classList.add('loading-text');
+          statusElement.textContent = '● OFFLINE';
+          statusElement.className = 'status error';
+          isConnected = false;
+        }
+      }
+
+      // Initialize the interface
+      function initialize() {
+        createParticles();
+        createNeuralLines();
+        fetchStatus();
+        setInterval(fetchStatus, 2000);
+      }
+
+      // Start the interface when page loads
+      window.addEventListener('load', initialize);
+    </script>
+  </body>
+</html>
