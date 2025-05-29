@@ -6,10 +6,23 @@ const InfoContainer = styled.div`
   top: 30px;
   left: 30px;
   z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 15px;
 
   @media (max-width: 768px) {
     top: 20px;
     left: 20px;
+  }
+`;
+
+const LatencyMessage = styled.span`
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+  white-space: nowrap;
+
+  body.light-mode & {
+    color: rgba(0, 0, 0, 0.6);
   }
 `;
 
@@ -97,6 +110,7 @@ export const InfoIcon: React.FC = () => {
   return (
     <InfoContainer>
       <InfoButton onClick={() => setShowInfo(!showInfo)}>ⓘ</InfoButton>
+      <LatencyMessage>(average latency is 4 seconds, so be patient!)</LatencyMessage>
       <InfoPanel isVisible={showInfo}>
         <h3>Available Modes</h3>
         <p><strong>Transcription Mode:</strong> Simply converts your speech to text. Default mode when you start.</p>
