@@ -7,65 +7,70 @@ interface AudioRecorderProps {
 
 export const AudioRecorder: React.FC<AudioRecorderProps> = ({ isListening, onAudioData }) => {
   const audioContextRef = useRef<AudioContext | null>(null);
+  const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
+  const processorRef = useRef<ScriptProcessorNode | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const bufferRef = useRef<Float32Array[]>([]);
-  const lastSentRef = useRef<number>(0);
-  const BUFFER_SIZE = 2048;  // Audio processing buffer size
-  const SEND_INTERVAL = 2000;  // Send every 2 seconds
 
   useEffect(() => {
-    const initAudio = async () => {
+    const initializeRecording = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        // Request microphone access
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true
+          }
+        });
+        
         streamRef.current = stream;
         
+        // Create audio context
         const audioContext = new AudioContext();
         audioContextRef.current = audioContext;
         
+        // Create source
         const source = audioContext.createMediaStreamSource(stream);
-        const processor = audioContext.createScriptProcessor(BUFFER_SIZE, 1, 1);
-
+        sourceRef.current = source;
+        
+        // Create processor
+        const processor = audioContext.createScriptProcessor(2048, 1, 1);
+        processorRef.current = processor;
+        
+        // Connect nodes
         source.connect(processor);
         processor.connect(audioContext.destination);
-
+        
+        // Handle audio processing
         processor.onaudioprocess = (e) => {
           const inputData = e.inputBuffer.getChannelData(0);
-          bufferRef.current.push(new Float32Array(inputData));
-
-          const now = Date.now();
-          if (now - lastSentRef.current >= SEND_INTERVAL) {
-            // Concatenate all buffers
-            const totalLength = bufferRef.current.reduce((acc, curr) => acc + curr.length, 0);
-            const concatenated = new Float32Array(totalLength);
-            let offset = 0;
-            
-            bufferRef.current.forEach(buffer => {
-              concatenated.set(buffer, offset);
-              offset += buffer.length;
-            });
-
-            onAudioData(concatenated);
-            bufferRef.current = [];
-            lastSentRef.current = now;
-          }
+          onAudioData(inputData);
         };
+
+        console.log('Audio recording initialized successfully');
       } catch (error) {
-        console.error('Error accessing microphone:', error);
+        console.error('Error initializing audio recording:', error);
       }
     };
 
     if (isListening) {
-      initAudio();
+      initializeRecording();
     }
 
+    // Cleanup
     return () => {
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
+      if (processorRef.current) {
+        processorRef.current.disconnect();
+      }
+      if (sourceRef.current) {
+        sourceRef.current.disconnect();
       }
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
       }
-      bufferRef.current = [];
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+      }
     };
   }, [isListening, onAudioData]);
 

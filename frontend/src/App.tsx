@@ -182,6 +182,7 @@ export const App: React.FC = () => {
   });
   const [isConnected, setIsConnected] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [hasMicPermission, setHasMicPermission] = useState<boolean>(false);
 
   // Set initial theme class on mount
   useEffect(() => {
@@ -228,6 +229,30 @@ export const App: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    const requestMicrophoneAccess = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        setHasMicPermission(true);
+        // Stop the test stream
+        stream.getTracks().forEach(track => track.stop());
+        setStatus(prev => ({
+          ...prev,
+          transcription: 'Click the orb to start recording'
+        }));
+      } catch (error) {
+        console.error('Microphone access denied:', error);
+        setHasMicPermission(false);
+        setStatus(prev => ({
+          ...prev,
+          transcription: 'Please enable microphone access to use voice features'
+        }));
+      }
+    };
+
+    requestMicrophoneAccess();
+  }, []);
+
   const toggleTheme = () => {
     setIsDarkMode(prev => !prev);
   };
@@ -261,7 +286,22 @@ export const App: React.FC = () => {
     }
   };
 
-  const toggleRecording = () => {
+  const toggleRecording = async () => {
+    if (!hasMicPermission) {
+      const confirmed = window.confirm('Microphone access is required. Would you like to enable it?');
+      if (confirmed) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          stream.getTracks().forEach(track => track.stop());
+          setHasMicPermission(true);
+        } catch (error) {
+          console.error('Microphone access denied:', error);
+          return;
+        }
+      } else {
+        return;
+      }
+    }
     setIsRecording(prev => !prev);
   };
 
