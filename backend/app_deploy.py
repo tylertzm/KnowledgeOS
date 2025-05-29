@@ -102,42 +102,88 @@ def handle_audio():
         return handle_audio_options()
         
     try:
+        # Log incoming request
+        console.print("[INFO] Received audio request", style="bold blue")
+        
         data = request.json
         if not data or 'audio' not in data:
+            console.print("[ERROR] No audio data in request", style="bold red")
             return jsonify({
                 'error': 'No audio data received'
             }), 400
 
         audio_data = data['audio']
         
-        # Convert audio data to numpy array
-        audio_array = np.array(audio_data, dtype=np.float32)
+        # Validate audio data
+        if not isinstance(audio_data, list):
+            console.print("[ERROR] Invalid audio data format", style="bold red")
+            return jsonify({
+                'error': 'Invalid audio data format'
+            }), 400
+
+        # Convert audio data to numpy array with error handling
+        try:
+            audio_array = np.array(audio_data, dtype=np.float32)
+        except Exception as e:
+            console.print(f"[ERROR] Failed to convert audio data: {e}", style="bold red")
+            return jsonify({
+                'error': 'Failed to process audio data'
+            }), 400
+
+        # Check audio array validity
+        if audio_array.size == 0:
+            console.print("[ERROR] Empty audio data", style="bold red")
+            return jsonify({
+                'error': 'Empty audio data'
+            }), 400
+
+        console.print(f"[INFO] Processing audio data of length {len(audio_data)}", style="bold green")
         
         # Process the audio (transcribe)
-        transcription = transcriber.transcribe(audio_array)
-        
+        try:
+            transcription = transcriber.transcribe(audio_array)
+            if not transcription:
+                console.print("[ERROR] Transcription failed", style="bold red")
+                return jsonify({
+                    'error': 'Transcription failed'
+                }), 500
+        except Exception as e:
+            console.print(f"[ERROR] Transcription error: {e}", style="bold red")
+            return jsonify({
+                'error': 'Transcription failed',
+                'details': str(e)
+            }), 500
+
         # Update global state
-        global latest_transcription, latest_response
+        global ai_mode_active, websearch_mode_active, latest_transcription, latest_response
         latest_transcription = transcription
         
         # Process the transcription based on mode
-        if "ai mode" in transcription.lower():
-            ai_mode_active = True
-            websearch_mode_active = False
-            latest_response = "AI mode activated"
-        elif "web search mode" in transcription.lower():
-            ai_mode_active = False
-            websearch_mode_active = True
-            latest_response = "Web search mode activated"
-        elif websearch_mode_active and transcription.strip().endswith("?"):
-            response = websearch_handler.search(transcription)
-            if response:
-                latest_response = response
-        elif ai_mode_active:
-            response = llm_handler.get_response(transcription)
-            if response:
-                latest_response = response
+        try:
+            if "ai mode" in transcription.lower():
+                ai_mode_active = True
+                websearch_mode_active = False
+                latest_response = "AI mode activated"
+            elif "web search mode" in transcription.lower():
+                ai_mode_active = False
+                websearch_mode_active = True
+                latest_response = "Web search mode activated"
+            elif websearch_mode_active and transcription.strip().endswith("?"):
+                response = websearch_handler.search(transcription)
+                if response:
+                    latest_response = response
+            elif ai_mode_active:
+                response = llm_handler.get_response(transcription)
+                if response:
+                    latest_response = response
+        except Exception as e:
+            console.print(f"[ERROR] Response processing failed: {e}", style="bold red")
+            return jsonify({
+                'error': 'Failed to process response',
+                'details': str(e)
+            }), 500
 
+        console.print("[SUCCESS] Audio processed successfully", style="bold green")
         return jsonify({
             'success': True,
             'transcription': transcription,
@@ -146,9 +192,9 @@ def handle_audio():
         })
 
     except Exception as e:
-        console.print(f"[ERROR] Audio processing failed: {e}", style="bold red")
+        console.print(f"[ERROR] Unexpected error: {e}", style="bold red")
         return jsonify({
-            'error': 'Failed to process audio',
+            'error': 'Unexpected error',
             'details': str(e)
         }), 500
 
