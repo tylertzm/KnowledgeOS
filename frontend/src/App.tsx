@@ -43,16 +43,67 @@ const Container = styled.div`
 const TextDisplay = styled.div`
   padding: 2rem;
   margin: 2rem 0;
-  min-height: 200px;
+  height: 300px;
+  max-height: 40vh;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
   text-align: center;
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(12px);
+  
+  /* Custom Scrollbar Styling */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+  
+  &::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 4px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+    transition: all 0.3s ease;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255, 255, 255, 0.5);
+  }
+
+  &::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  /* Light mode styles */
+  body.light-mode & {
+    background: rgba(255, 255, 255, 0.8);
+    scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+
+    &::-webkit-scrollbar-thumb {
+      background-color: rgba(0, 0, 0, 0.2);
+      border: 2px solid transparent;
+      background-clip: content-box;
+    }
+
+    &::-webkit-scrollbar-thumb:hover {
+      background-color: rgba(0, 0, 0, 0.3);
+    }
+  }
 
   @media (max-width: 768px) {
     padding: 1.5rem;
     margin: 1rem 0;
+    height: 250px;
   }
 `;
 
@@ -93,17 +144,26 @@ const Response = styled.div<{ mode: string }>`
   line-height: 1.6;
   color: rgba(255, 255, 255, 0.8);
   border-top: 1px solid rgba(255, 255, 255, 0.1);
-  padding-top: 1.5rem;
+  padding: 1.5rem;
   margin-top: 1rem;
-  transition: all 0.6s ease;
+  margin-bottom: 1rem;
+  max-width: 100%;
+  width: 100%;
+  word-wrap: break-word;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 
   body.light-mode & {
     color: rgba(29, 29, 31, 0.8);
     border-top-color: rgba(0, 0, 0, 0.1);
+    background: rgba(0, 0, 0, 0.03);
   }
 
   @media (max-width: 768px) {
     font-size: 1rem;
+    padding: 1rem;
+    margin-top: 0.5rem;
   }
 `;
 
@@ -115,6 +175,11 @@ export const App: React.FC = () => {
     response: ''
   });
   const [isConnected, setIsConnected] = useState(false);
+
+  // Set initial theme class on mount
+  useEffect(() => {
+    document.body.classList.toggle('light-mode', !isDarkMode);
+  }, [isDarkMode]);
 
   useEffect(() => {
     const fetchStatus = async () => {
@@ -136,12 +201,14 @@ export const App: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const toggleTheme = () => setIsDarkMode(!isDarkMode);
+  const toggleTheme = () => {
+    setIsDarkMode(prev => !prev);
+  };
 
   return (
     <>
       <GlobalStyles />
-      <AppWrapper className={isDarkMode ? '' : 'light-mode'}>
+      <AppWrapper>
         <BackgroundGlow />
         <StatusBar 
           isConnected={isConnected} 

@@ -52,9 +52,12 @@ def main_loop():
             
             transcription = transcriber.transcribe(audio_data.flatten())
             if transcription and transcription != ".":
+                # Only show transcription in web search mode if it ends with a question mark
+                if websearch_mode_active and not transcription.strip().endswith('?'):
+                    continue
+
                 latest_transcription = transcription
                 console.print(f"🗣️ You said: {transcription}", style="bold blue")
-                
                 
                 if "ai mode" in transcription.lower():
                     ai_mode_active = True
@@ -78,9 +81,6 @@ def main_loop():
                         if response:
                             latest_response = response
                             console.print(f"🌐 Web search replied: {response}", style="bold cyan")
-                    else:
-                        latest_response = "Please end your search query with a question mark (?)"
-                        console.print(f"ℹ️ Hint: {latest_response}", style="bold yellow")
                 elif ai_mode_active:
                     response = llm_handler.get_response(transcription)
                     if response:

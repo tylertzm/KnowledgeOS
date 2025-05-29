@@ -100,7 +100,7 @@ const OrbInner = styled.div`
     inset 0 0 60px rgba(255, 255, 255, 0.05);
   transition: all 0.6s ease;
 
-  body.light-mode & {
+  .light-mode & {
     background: linear-gradient(135deg, #ffffff 0%, #f5f5f7 50%, #ffffff 100%);
     box-shadow: 
       0 0 60px rgba(0, 0, 0, 0.08),
@@ -112,32 +112,8 @@ const OrbInner = styled.div`
     animation: ${pulse} 0.8s ease-in-out infinite, ${listeningGlow} 2s ease-in-out infinite;
   }
 
-  body.light-mode .listening & {
+  .light-mode .listening & {
     animation: ${pulse} 0.8s ease-in-out infinite, ${listeningGlowLight} 2s ease-in-out infinite;
-  }
-`;
-
-const OrbCore = styled.div`
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.3);
-  animation: ${pulse} 1.5s ease-in-out infinite alternate;
-  box-shadow: 0 0 30px rgba(255, 255, 255, 0.2);
-  transition: all 0.6s ease;
-
-  body.light-mode & {
-    background: rgba(0, 122, 255, 0.4);
-    box-shadow: 0 0 30px rgba(0, 122, 255, 0.2);
-  }
-
-  @media (max-width: 768px) {
-    width: 30px;
-    height: 30px;
   }
 `;
 
@@ -151,6 +127,5 @@ export const SiriOrb: React.FC<SiriOrbProps> = ({ isListening, onClick }) => (
     <OrbOuter />
     <OrbMiddle />
     <OrbInner />
-    <OrbCore />
   </OrbContainer>
 );
