@@ -345,6 +345,9 @@ export const App: React.FC = () => {
         <h5 style={{ textAlign: 'center' }}>tap the globe to start</h5>
         <h5 style={{ textAlign: 'center' }}>to switch modes, ask politely!</h5>
         <h5 style={{ textAlign: 'center' }}>average latency is 4s</h5>
+        <h5 style={{ textAlign: 'center' }}>it might take up to a minute to connect!</h5>
+
+
           </TextDisplay>
 
         </Container>
