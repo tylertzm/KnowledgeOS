@@ -7,6 +7,8 @@ from websearch_handler import WebSearchHandler
 import numpy as np
 from transcriptions import Transcriber
 from collections import defaultdict
+import sqlite3
+from datetime import datetime, timedelta
 
 app = Flask(__name__)
 CORS(app, resources={
@@ -19,6 +21,57 @@ CORS(app, resources={
         "supports_credentials": False  # Changed to False since we're using * for origins
     }
 })
+
+# Initialize SQLite database
+DB_PATH = "sessions.db"
+
+def init_db():
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS sessions (
+            session_id TEXT PRIMARY KEY,
+            ai_mode_active INTEGER DEFAULT 0,
+            websearch_mode_active INTEGER DEFAULT 0,
+            latest_transcription TEXT DEFAULT '',
+            latest_response TEXT DEFAULT '',
+            last_active TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    conn.commit()
+    conn.close()
+
+def get_session(session_id):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM sessions WHERE session_id = ?", (session_id,))
+    session = cursor.fetchone()
+    conn.close()
+    return session
+
+def create_or_update_session(session_id, ai_mode_active, websearch_mode_active, latest_transcription, latest_response):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO sessions (session_id, ai_mode_active, websearch_mode_active, latest_transcription, latest_response, last_active)
+        VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(session_id) DO UPDATE SET
+            ai_mode_active = excluded.ai_mode_active,
+            websearch_mode_active = excluded.websearch_mode_active,
+            latest_transcription = excluded.latest_transcription,
+            latest_response = excluded.latest_response,
+            last_active = CURRENT_TIMESTAMP
+    """, (session_id, ai_mode_active, websearch_mode_active, latest_transcription, latest_response))
+    conn.commit()
+    conn.close()
+
+def delete_inactive_sessions():
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cutoff_time = datetime.now() - timedelta(minutes=30)  # Inactive for 30 minutes
+    cursor.execute("DELETE FROM sessions WHERE last_active < ?", (cutoff_time,))
+    conn.commit()
+    conn.close()
 
 # Session-specific state
 sessions = defaultdict(lambda: {
@@ -49,12 +102,17 @@ def status():
     if not session_id:
         return jsonify({"error": "Session-Id header is required"}), 400
 
-    session = sessions[session_id]
-    mode = "WebSearch" if session["websearch_mode_active"] else "AI" if session["ai_mode_active"] else "Transcription"
+    session = get_session(session_id)
+    if not session:
+        # Create a new session if it doesn't exist
+        create_or_update_session(session_id, 0, 0, "", "")
+        session = (session_id, 0, 0, "", "", datetime.now())
+
+    mode = "WebSearch" if session[2] else "AI" if session[1] else "Transcription"
     return jsonify({
         "mode": mode,
-        "transcription": session["latest_transcription"],
-        "response": session["latest_response"]
+        "transcription": session[3],
+        "response": session[4]
     })
 
 @app.route("/process", methods=["POST"])
@@ -63,37 +121,41 @@ def process():
     if not session_id:
         return jsonify({"error": "Session-Id header is required"}), 400
 
-    session = sessions[session_id]
+    session = get_session(session_id)
+    if not session:
+        return jsonify({"error": "Session not found"}), 404
+
     data = request.json
     text = data.get("text", "")
 
     if not text:
         return jsonify({"error": "No text provided"}), 400
 
-    session["latest_transcription"] = text
+    ai_mode_active = session[1]
+    websearch_mode_active = session[2]
+    latest_transcription = text
+    latest_response = ""
 
     if "ai mode" in text.lower():
-        session["ai_mode_active"] = True
-        session["websearch_mode_active"] = False
-        session["latest_response"] = "AI mode activated"
+        ai_mode_active = 1
+        websearch_mode_active = 0
+        latest_response = "AI mode activated"
     elif "web search mode" in text.lower():
-        session["ai_mode_active"] = False
-        session["websearch_mode_active"] = True
-        session["latest_response"] = "Web search mode activated"
-    elif session["websearch_mode_active"] and text.strip().endswith("?"):
-        response = websearch_handler.search(text)
-        if response:
-            session["latest_response"] = response
-    elif session["ai_mode_active"]:
-        response = llm_handler.get_response(text)
-        if response:
-            session["latest_response"] = response
-            
-    mode = "WebSearch" if session["websearch_mode_active"] else "AI" if session["ai_mode_active"] else "Transcription"
+        ai_mode_active = 0
+        websearch_mode_active = 1
+        latest_response = "Web search mode activated"
+    elif websearch_mode_active and text.strip().endswith("?"):
+        latest_response = f"Web search result for: {text}"  # Placeholder
+    elif ai_mode_active:
+        latest_response = f"AI response for: {text}"  # Placeholder
+
+    create_or_update_session(session_id, ai_mode_active, websearch_mode_active, latest_transcription, latest_response)
+
+    mode = "WebSearch" if websearch_mode_active else "AI" if ai_mode_active else "Transcription"
     return jsonify({
         "mode": mode,
-        "transcription": session["latest_transcription"],
-        "response": session["latest_response"]
+        "transcription": latest_transcription,
+        "response": latest_response
     })
 
 # Add an OPTIONS handler for the /audio endpoint
@@ -224,7 +286,12 @@ def handle_audio():
             'details': str(e)
         }), 500
 
+@app.before_request
+def cleanup_sessions():
+    delete_inactive_sessions()
+
 if __name__ == "__main__":
+    init_db()
     if not GROQ_API_KEY:
         console.print("[FATAL ERROR] GROQ_API_KEY environment variable not set.", style="bold red")
         exit(1)

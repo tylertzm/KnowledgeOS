@@ -366,7 +366,18 @@ export const App: React.FC = () => {
           statusText={isConnected ? 'Neural Link Active' : 'Connection Lost'} 
         />
         <ThemeToggle isDark={isDarkMode} onToggle={toggleTheme} />
-        
+                  <div style={{ marginTop: '20px' }}>
+            <label htmlFor="mode" style={{ marginRight: '10px' }}>Switch Mode:</label>
+            <select
+              id="mode-select"
+              value={status.mode}
+              onChange={(e) => switchMode(e.target.value)}
+            >
+              {modeOptions.map(mode => (
+                <option key={mode} value={mode}>{mode}</option>
+              ))}
+            </select>
+          </div>
         <Container>
           <SiriOrb 
             isListening={isRecording} 
@@ -393,18 +404,7 @@ export const App: React.FC = () => {
             <h5 style={{ textAlign: 'center' }}>average latency is 4s</h5>
             <h5 style={{ textAlign: 'center' }}>it might take up to a minute to connect!</h5>
           </TextDisplay>
-          <div style={{ marginTop: '20px' }}>
-            <label htmlFor="mode-select" style={{ marginRight: '10px' }}>Switch Mode:</label>
-            <select
-              id="mode-select"
-              value={status.mode}
-              onChange={(e) => switchMode(e.target.value)}
-            >
-              {modeOptions.map(mode => (
-                <option key={mode} value={mode}>{mode}</option>
-              ))}
-            </select>
-          </div>
+
         </Container>
       </AppWrapper>
     </>
