@@ -16,6 +16,8 @@ CORS(app, resources={
             # Preview deployments
             r"https://*-tylertzms-projects.vercel.app",
             r"https://*.vercel.app",
+            # Specific preview deployment
+            "https://knowledgeos-esjegthix-tylertzms-projects.vercel.app",
             # Local development
             "http://localhost:3000",
             # Firebase deployment
@@ -24,7 +26,8 @@ CORS(app, resources={
         "methods": ["GET", "POST", "OPTIONS"],
         "allow_headers": ["Content-Type", "Accept", "Authorization"],
         "max_age": 3600,
-        "supports_credentials": True
+        "supports_credentials": True,
+        "expose_headers": ["Content-Type", "Authorization"]
     }
 })
 
@@ -91,9 +94,19 @@ def process():
 @app.route('/audio', methods=['OPTIONS'])
 def handle_audio_options():
     response = jsonify({'status': 'ok'})
-    response.headers.add('Access-Control-Allow-Origin', '*')
+    # Use the request's origin if it's in our allowed origins
+    origin = request.headers.get('Origin')
+    if origin in [
+        "https://knowledgeos.vercel.app",
+        "https://knowledgeos-esjegthix-tylertzms-projects.vercel.app",
+        "http://localhost:3000",
+        "https://knowledgeos.web.app"
+    ] or origin.endswith('-tylertzms-projects.vercel.app') or origin.endswith('.vercel.app'):
+        response.headers.add('Access-Control-Allow-Origin', origin)
     response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
     response.headers.add('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
+    response.headers.add('Access-Control-Allow-Credentials', 'true')
+    response.headers.add('Access-Control-Expose-Headers', 'Content-Type,Authorization')
     return response, 200
 
 @app.route('/audio', methods=['POST'])
