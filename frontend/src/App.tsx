@@ -167,9 +167,9 @@ const Response = styled.div<{ mode: string }>`
   }
 `;
 
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5001';
-
-console.log('Using API URL:', API_BASE); // Debug log
+const API_BASE = process.env.REACT_APP_API_URL;
+console.log('Environment:', process.env.NODE_ENV);
+console.log('Using API URL:', API_BASE);
 
 export const App: React.FC = () => {
   const [isDarkMode, setIsDarkMode] = useState(true);
@@ -188,21 +188,28 @@ export const App: React.FC = () => {
   useEffect(() => {
     const fetchStatus = async () => {
       try {
-        console.log('Attempting to connect to:', `${API_BASE}/status`);
-        const response = await fetch(`${API_BASE}/status`);
+        console.log('Connecting to:', `${API_BASE}/status`);
+        const response = await fetch(`${API_BASE}/status`, {
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          }
+        });
         
         if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         
         const data = await response.json();
         console.log('Backend response:', data);
-        
         setStatus(data);
         setIsConnected(true);
         
       } catch (error) {
-        console.error('Connection error:', error);
+        console.error('Connection details:', {
+          url: API_BASE,
+          error: error instanceof Error ? error.message : String(error)
+        });
         setIsConnected(false);
         setStatus(prev => ({ ...prev, mode: 'OFFLINE' }));
       }
