@@ -117,8 +117,6 @@ export const InfoIcon: React.FC = () => {
         <p><strong>Web Search Mode:</strong> Say "web search mode" to activate. Searches the web for answers to your questions.</p>
         <p>Tap the glowing orb to start/stop recording.</p>
       </InfoPanel>
-      <br/>
-      <LatencyMessage>(average latency is 4 seconds, so be patient!)</LatencyMessage>
     </InfoContainer>
     
   );
