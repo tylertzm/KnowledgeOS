@@ -331,6 +331,7 @@ export const App: React.FC = () => {
             onAudioData={handleAudioData}
           />
           <TextDisplay>
+            <h1>tap the globe to start</h1>
             <ModeIndicator>{status.mode}</ModeIndicator>
             <Transcription isEmpty={!status.transcription}>
               {status.transcription || 'Listening for your voice...'}
