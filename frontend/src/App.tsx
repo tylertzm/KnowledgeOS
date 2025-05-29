@@ -366,7 +366,34 @@ export const App: React.FC = () => {
           statusText={isConnected ? 'Neural Link Active' : 'Connection Lost'} 
         />
         <ThemeToggle isDark={isDarkMode} onToggle={toggleTheme} />
-        <div style={{ marginTop: '20px', textAlign: 'center' }}>
+        
+        <Container>
+          <SiriOrb 
+            isListening={isRecording} 
+            onClick={toggleRecording} // Tap to stop or start recording
+          />
+          <AudioRecorder
+            isListening={isRecording}
+            onAudioData={handleAudioData}
+          />
+          <TextDisplay>
+            <ModeIndicator>
+              {status.mode === 'Transcription' ? 'Multilingual Transcription' : status.mode}
+            </ModeIndicator>
+            <Transcription isEmpty={!status.transcription}>
+              {status.transcription || 'Listening for your voice...'}
+            </Transcription>
+            {status.response && ['AI', 'WebSearch'].includes(status.mode) && (
+              <Response mode={status.mode.toLowerCase()}>
+                {status.response}
+              </Response>
+            )}
+            <h5 style={{ textAlign: 'center' }}>tap the globe to stop recording</h5>
+            <h5 style={{ textAlign: 'center' }}>to switch modes, ask politely!</h5>
+            <h5 style={{ textAlign: 'center' }}>average latency is 4s</h5>
+            <h5 style={{ textAlign: 'center' }}>it might take up to a minute to connect!</h5>
+          </TextDisplay>
+          <div style={{ marginTop: '20px', textAlign: 'center' }}>
           <label 
             htmlFor="mode-select" 
             style={{
@@ -398,33 +425,6 @@ export const App: React.FC = () => {
             ))}
           </select>
         </div>
-        <Container>
-          <SiriOrb 
-            isListening={isRecording} 
-            onClick={toggleRecording} // Tap to stop or start recording
-          />
-          <AudioRecorder
-            isListening={isRecording}
-            onAudioData={handleAudioData}
-          />
-          <TextDisplay>
-            <ModeIndicator>
-              {status.mode === 'Transcription' ? 'Multilingual Transcription' : status.mode}
-            </ModeIndicator>
-            <Transcription isEmpty={!status.transcription}>
-              {status.transcription || 'Listening for your voice...'}
-            </Transcription>
-            {status.response && ['AI', 'WebSearch'].includes(status.mode) && (
-              <Response mode={status.mode.toLowerCase()}>
-                {status.response}
-              </Response>
-            )}
-            <h5 style={{ textAlign: 'center' }}>tap the globe to stop recording</h5>
-            <h5 style={{ textAlign: 'center' }}>to switch modes, ask politely!</h5>
-            <h5 style={{ textAlign: 'center' }}>average latency is 4s</h5>
-            <h5 style={{ textAlign: 'center' }}>it might take up to a minute to connect!</h5>
-          </TextDisplay>
-
         </Container>
       </AppWrapper>
     </>
