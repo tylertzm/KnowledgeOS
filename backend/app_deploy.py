@@ -6,7 +6,21 @@ from llm_handler import LLMHandler
 from websearch_handler import WebSearchHandler
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={
+    r"/*": {
+        "origins": [
+            "https://knowledgeos.vercel.app",
+            "knowledgeos-dnmsrlqxt-tylertzms-projects.vercel.app",
+            "https://knowledgeos-tylertzms-projects.vercel.app",
+            "https://knowledgeos-git-main-tylertzms-projects.vercel.app/",
+            "http://localhost:3000",
+            "https://knowledgeos.web.app"
+        ],
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Accept", "Authorization"],
+        "max_age": 3600
+    }
+})
 
 # Global state
 ai_mode_active = True
@@ -66,10 +80,25 @@ def process():
         "response": latest_response
     })
 
-if __name__ == "__main__":
-    if not GROQ_API_KEY:
-        console.print("[FATAL ERROR] GROQ_API_KEY environment variable not set.", style="bold red")
-        exit(1)
-        
-    port = int(os.environ.get("PORT", 5001))
-    app.run(host="0.0.0.0", port=port)
+# Add an OPTIONS handler for the /audio endpoint
+@app.route('/audio', methods=['OPTIONS'])
+def handle_audio_options():
+    response = jsonify({'status': 'ok'})
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
+    return response, 200
+
+@app.route('/audio', methods=['POST'])
+def handle_audio():
+    if request.method == "OPTIONS":
+        return handle_audio_options()
+    # ...existing code...
+
+    if __name__ == "__main__":
+        if not GROQ_API_KEY:
+            console.print("[FATAL ERROR] GROQ_API_KEY environment variable not set.", style="bold red")
+            exit(1)
+            
+        port = int(os.environ.get("PORT", 5001))
+        app.run(host="0.0.0.0", port=port)
