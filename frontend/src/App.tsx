@@ -342,7 +342,8 @@ export const App: React.FC = () => {
             )}
           </TextDisplay>
         </Container>
-        <h5>tap the globe to start</h5>
+        <h5 style={{ textAlign: 'center' }}>tap the globe to start</h5>
+        <h5 style={{ textAlign: 'center' }}>to switch modes, ask politely!</h5>
 
       </AppWrapper>
     </>
