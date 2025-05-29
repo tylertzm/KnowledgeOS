@@ -83,7 +83,6 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({ isListening, onAud
 
   const handleAudioProcess = async (inputData: Float32Array) => {
     try {
-      console.log('Sending audio data to:', `${API_BASE}/audio`);
       const response = await fetch(`${API_BASE}/audio`, {
         method: 'POST',
         headers: {
@@ -91,12 +90,15 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({ isListening, onAud
           'Accept': 'application/json'
         },
         mode: 'cors',
+        cache: 'no-cache',
         body: JSON.stringify({
           audio: Array.from(inputData)
         })
       });
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Server response:', errorText);
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
