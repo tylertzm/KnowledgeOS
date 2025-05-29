@@ -315,23 +315,31 @@ export const App: React.FC = () => {
     }
   };
 
-  const toggleRecording = async () => {
-    if (!hasMicPermission) {
-      const confirmed = window.confirm('Microphone access is required. Would you like to enable it?');
-      if (confirmed) {
+  useEffect(() => {
+    const startRecording = async () => {
+      if (!hasMicPermission) {
         try {
           const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
           stream.getTracks().forEach(track => track.stop());
           setHasMicPermission(true);
+          setIsRecording(true); // Automatically start recording
         } catch (error) {
           console.error('Microphone access denied:', error);
-          return;
+          setStatus(prev => ({
+            ...prev,
+            transcription: 'Please enable microphone access'
+          }));
         }
       } else {
-        return;
+        setIsRecording(true); // Automatically start recording if permission is already granted
       }
-    }
-    setIsRecording(prev => !prev);
+    };
+
+    startRecording();
+  }, [hasMicPermission]);
+
+  const toggleRecording = () => {
+    setIsRecording(prev => !prev); // Toggle recording state when the globe is tapped
   };
 
   return (
@@ -349,7 +357,7 @@ export const App: React.FC = () => {
         <Container>
           <SiriOrb 
             isListening={isRecording} 
-            onClick={toggleRecording}
+            onClick={toggleRecording} // Tap to stop or start recording
           />
           <AudioRecorder
             isListening={isRecording}
@@ -367,7 +375,7 @@ export const App: React.FC = () => {
                 {status.response}
               </Response>
             )}
-        <h5 style={{ textAlign: 'center' }}>tap the globe to start</h5>
+        <h5 style={{ textAlign: 'center' }}>tap the globe to stop recording</h5>
         <h5 style={{ textAlign: 'center' }}>to switch modes, ask politely!</h5>
         <h5 style={{ textAlign: 'center' }}>average latency is 4s</h5>
         <h5 style={{ textAlign: 'center' }}>it might take up to a minute to connect!</h5>
