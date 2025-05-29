@@ -366,18 +366,38 @@ export const App: React.FC = () => {
           statusText={isConnected ? 'Neural Link Active' : 'Connection Lost'} 
         />
         <ThemeToggle isDark={isDarkMode} onToggle={toggleTheme} />
-                  <div style={{ marginTop: '20px' }}>
-            <label htmlFor="mode" style={{ marginRight: '10px' }}>Switch Mode:</label>
-            <select
-              id="mode-select"
-              value={status.mode}
-              onChange={(e) => switchMode(e.target.value)}
-            >
-              {modeOptions.map(mode => (
-                <option key={mode} value={mode}>{mode}</option>
-              ))}
-            </select>
-          </div>
+        <div style={{ marginTop: '20px', textAlign: 'center' }}>
+          <label 
+            htmlFor="mode-select" 
+            style={{
+              marginRight: '10px',
+              fontSize: '1rem',
+              fontWeight: 'bold',
+              color: '#007AFF',
+              textTransform: 'uppercase',
+              letterSpacing: '1px',
+            }}
+          >
+            Select Mode:
+          </label>
+          <select
+            id="mode-select"
+            value={status.mode}
+            onChange={(e) => switchMode(e.target.value)}
+            style={{
+              padding: '0.5rem',
+              borderRadius: '8px',
+              border: '1px solid #ccc',
+              fontSize: '1rem',
+              outline: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            {modeOptions.map(mode => (
+              <option key={mode} value={mode}>{mode}</option>
+            ))}
+          </select>
+        </div>
         <Container>
           <SiriOrb 
             isListening={isRecording} 
