@@ -110,7 +110,6 @@ export const InfoIcon: React.FC = () => {
   return (
     <InfoContainer>
       <InfoButton onClick={() => setShowInfo(!showInfo)}>ⓘ</InfoButton>
-      <LatencyMessage>(average latency is 4 seconds, so be patient!)</LatencyMessage>
       <InfoPanel isVisible={showInfo}>
         <h3>Available Modes</h3>
         <p><strong>Transcription Mode:</strong> Simply converts your speech to text. Default mode when you start.</p>
@@ -118,6 +117,9 @@ export const InfoIcon: React.FC = () => {
         <p><strong>Web Search Mode:</strong> Say "web search mode" to activate. Searches the web for answers to your questions.</p>
         <p>Tap the glowing orb to start/stop recording.</p>
       </InfoPanel>
+      <br/>
+      <LatencyMessage>(average latency is 4 seconds, so be patient!)</LatencyMessage>
     </InfoContainer>
+    
   );
 };
