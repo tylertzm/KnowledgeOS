@@ -66,12 +66,15 @@ def create_or_update_session(session_id, ai_mode_active, websearch_mode_active, 
     conn.close()
 
 def delete_inactive_sessions():
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cutoff_time = datetime.now() - timedelta(minutes=30)  # Inactive for 30 minutes
-    cursor.execute("DELETE FROM sessions WHERE last_active < ?", (cutoff_time,))
-    conn.commit()
-    conn.close()
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cutoff_time = datetime.now() - timedelta(minutes=30)  # Inactive for 30 minutes
+        cursor.execute("DELETE FROM sessions WHERE last_active < ?", (cutoff_time,))
+        conn.commit()
+        conn.close()
+    except sqlite3.OperationalError as e:
+        console.print(f"[ERROR] Failed to delete inactive sessions: {e}", style="bold red")
 
 # Session-specific state
 sessions = defaultdict(lambda: {
@@ -286,12 +289,17 @@ def handle_audio():
             'details': str(e)
         }), 500
 
+@app.before_first_request
+def initialize_database():
+    console.print("[INFO] Initializing database...", style="bold green")
+    init_db()
+
 @app.before_request
 def cleanup_sessions():
     delete_inactive_sessions()
 
 if __name__ == "__main__":
-    init_db()
+    init_db()  # Ensure the database is initialized before the app starts
     if not GROQ_API_KEY:
         console.print("[FATAL ERROR] GROQ_API_KEY environment variable not set.", style="bold red")
         exit(1)
