@@ -12,7 +12,7 @@ CORS(app, resources={
     r"/*": {
         "origins": "*",  # Allow all origins for now
         "methods": ["GET", "POST", "OPTIONS"],
-        "allow_headers": ["Content-Type", "Accept", "Authorization", "Origin", "X-Requested-With"],
+        "allow_headers": ["Content-Type", "Accept", "Authorization", "Origin", "X-Requested-With", "Session-Id"],  # Added "Session-Id"
         "expose_headers": ["Content-Type", "Authorization"],
         "max_age": 3600,
         "supports_credentials": False  # Changed to False since we're using * for origins
@@ -84,7 +84,7 @@ def handle_audio_options():
     response = jsonify({'status': 'ok'})
     origin = request.headers.get('Origin', '*')
     response.headers.add('Access-Control-Allow-Origin', origin)
-    response.headers.add('Access-Control-Allow-Headers', 'Content-Type, Accept, Authorization, Origin, X-Requested-With')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type, Accept, Authorization, Origin, X-Requested-With, Session-Id')  # Added "Session-Id"
     response.headers.add('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
     response.headers.add('Access-Control-Max-Age', '3600')
     response.headers.add('Access-Control-Expose-Headers', 'Content-Type, Authorization')

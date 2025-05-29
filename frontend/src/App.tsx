@@ -203,17 +203,15 @@ export const App: React.FC = () => {
     const fetchStatus = async () => {
       try {
         const apiUrl = new URL('/status', API_BASE).toString();
-        console.log('Connecting to:', apiUrl);
-        
         const response = await fetch(apiUrl, {
           headers: {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
             'Origin': window.location.origin,
-            'Session-Id': sessionId, // Include session ID in headers
+            // 'Session-Id': sessionId, // Temporarily remove this line
           },
           mode: 'cors',
-          cache: 'no-cache'
+          cache: 'no-cache',
         });
         
         if (!response.ok) {
