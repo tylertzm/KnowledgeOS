@@ -1,0 +1,13 @@
+{
+  "name": "knowledgeos",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "frontend"
+  ],
+  "scripts": {
+    "start": "cd backend && python app.py",
+    "build": "cd frontend && npm install && npm run build",
+    "dev": "cd frontend && npm start"
+  }
+}

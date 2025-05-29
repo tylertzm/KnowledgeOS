@@ -4,6 +4,7 @@ import numpy as np
 import threading
 import queue
 import sys
+import os
 from config import (
     console,
     CHUNK_SAMPLES,
@@ -110,4 +111,5 @@ if __name__ == "__main__":
         
     threading.Thread(target=audio_handler.start_recording, daemon=True).start()
     threading.Thread(target=main_loop, daemon=True).start()
-    app.run(host="0.0.0.0", port=5001)
+    port = int(os.environ.get("PORT", 5001))
+    app.run(host="0.0.0.0", port=port)

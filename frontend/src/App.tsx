@@ -184,7 +184,11 @@ export const App: React.FC = () => {
   useEffect(() => {
     const fetchStatus = async () => {
       try {
-        const response = await fetch('http://192.168.0.150:5001/status');
+        // In production, use the same origin
+        const baseUrl = process.env.NODE_ENV === 'production' 
+          ? '' 
+          : `http://${window.location.hostname}:5001`;
+        const response = await fetch(`${baseUrl}/status`);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json();
         setStatus(data);
