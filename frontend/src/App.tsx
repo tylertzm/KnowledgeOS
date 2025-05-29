@@ -7,6 +7,7 @@ import { GlobalStyles } from './styles/GlobalStyles';
 import { StatusResponse } from './types';
 import { AudioRecorder } from './components/AudioRecorder';
 import { InfoIcon } from './components/InfoIcon';
+import { v4 as uuidv4 } from 'uuid';
 
 const AppWrapper = styled.div`
   height: 100vh;
@@ -184,6 +185,14 @@ export const App: React.FC = () => {
   const [isConnected, setIsConnected] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [hasMicPermission, setHasMicPermission] = useState<boolean>(false);
+  const [sessionId] = useState(() => {
+    // Generate or retrieve a unique session ID
+    const existingSessionId = localStorage.getItem('sessionId');
+    if (existingSessionId) return existingSessionId;
+    const newSessionId = uuidv4();
+    localStorage.setItem('sessionId', newSessionId);
+    return newSessionId;
+  });
 
   // Set initial theme class on mount
   useEffect(() => {
@@ -200,7 +209,8 @@ export const App: React.FC = () => {
           headers: {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
-            'Origin': window.location.origin
+            'Origin': window.location.origin,
+            'Session-Id': sessionId, // Include session ID in headers
           },
           mode: 'cors',
           cache: 'no-cache'
@@ -253,6 +263,22 @@ export const App: React.FC = () => {
     requestMicrophoneAccess();
   }, []);
 
+  useEffect(() => {
+    if (status.mode === 'WebSearch' && status.transcription) {
+      const lowerCaseTranscription = status.transcription.toLowerCase();
+      if (lowerCaseTranscription.includes('transcription mode')) {
+        setStatus(prev => ({ ...prev, mode: 'Transcription' }));
+      } else if (lowerCaseTranscription.includes('ai mode')) {
+        setStatus(prev => ({ ...prev, mode: 'AI' }));
+      }
+    }
+  }, [status.transcription, status.mode]);
+
+  // Reset mode to "Transcription" on page reload
+  useEffect(() => {
+    setStatus(prev => ({ ...prev, mode: 'Transcription' }));
+  }, []);
+
   const toggleTheme = () => {
     setIsDarkMode(prev => !prev);
   };
@@ -264,7 +290,8 @@ export const App: React.FC = () => {
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
-          'Origin': window.location.origin
+          'Origin': window.location.origin,
+          'Session-Id': sessionId, // Include session ID in headers
         },
         mode: 'cors',
         cache: 'no-cache',
