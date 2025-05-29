@@ -167,6 +167,8 @@ const Response = styled.div<{ mode: string }>`
   }
 `;
 
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+
 export const App: React.FC = () => {
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [status, setStatus] = useState<StatusResponse>({
@@ -184,11 +186,7 @@ export const App: React.FC = () => {
   useEffect(() => {
     const fetchStatus = async () => {
       try {
-        // In production, use the same origin
-        const baseUrl = process.env.NODE_ENV === 'production' 
-          ? '' 
-          : `http://${window.location.hostname}:5001`;
-        const response = await fetch(`${baseUrl}/status`);
+        const response = await fetch(`${API_BASE}/status`);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json();
         setStatus(data);
