@@ -14,7 +14,7 @@ export const GlobalStyles = () => (
       html {
         height: 100%;
       }
-
+      
       body {
         min-height: 100%;
         background: linear-gradient(135deg, #000000 0%, #1a1a1a 50%, #2d2d2d 100%);
