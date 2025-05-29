@@ -208,7 +208,7 @@ export const App: React.FC = () => {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
             'Origin': window.location.origin,
-            // 'Session-Id': sessionId, // Temporarily remove this line
+            'Session-Id': sessionId, // Include session ID in headers
           },
           mode: 'cors',
           cache: 'no-cache',
@@ -261,16 +261,29 @@ export const App: React.FC = () => {
     requestMicrophoneAccess();
   }, []);
 
+  const modeOptions = ['Transcription', 'AI', 'WebSearch'];
+
+  const switchMode = (newMode: string) => {
+    setStatus(prev => ({
+      ...prev,
+      mode: newMode as StatusResponse['mode'],
+      transcription: `Switched to ${newMode} mode`,
+      response: ''
+    }));
+  };
+
   useEffect(() => {
-    if (status.mode === 'WebSearch' && status.transcription) {
+    if (status.transcription) {
       const lowerCaseTranscription = status.transcription.toLowerCase();
       if (lowerCaseTranscription.includes('transcription mode')) {
-        setStatus(prev => ({ ...prev, mode: 'Transcription' }));
+        switchMode('Transcription');
       } else if (lowerCaseTranscription.includes('ai mode')) {
-        setStatus(prev => ({ ...prev, mode: 'AI' }));
+        switchMode('AI');
+      } else if (lowerCaseTranscription.includes('web search mode')) {
+        switchMode('WebSearch');
       }
     }
-  }, [status.transcription, status.mode]);
+  }, [status.transcription]);
 
   // Reset mode to "Transcription" on page reload
   useEffect(() => {
@@ -294,8 +307,8 @@ export const App: React.FC = () => {
         mode: 'cors',
         cache: 'no-cache',
         body: JSON.stringify({
-          audio: Array.from(audioData)
-        })
+          audio: Array.from(audioData),
+        }),
       });
 
       if (!response.ok) {
@@ -375,17 +388,24 @@ export const App: React.FC = () => {
                 {status.response}
               </Response>
             )}
-        <h5 style={{ textAlign: 'center' }}>tap the globe to stop recording</h5>
-        <h5 style={{ textAlign: 'center' }}>to switch modes, ask politely!</h5>
-        <h5 style={{ textAlign: 'center' }}>average latency is 4s</h5>
-        <h5 style={{ textAlign: 'center' }}>it might take up to a minute to connect!</h5>
-
-
+            <h5 style={{ textAlign: 'center' }}>tap the globe to stop recording</h5>
+            <h5 style={{ textAlign: 'center' }}>to switch modes, ask politely!</h5>
+            <h5 style={{ textAlign: 'center' }}>average latency is 4s</h5>
+            <h5 style={{ textAlign: 'center' }}>it might take up to a minute to connect!</h5>
           </TextDisplay>
-
+          <div style={{ marginTop: '20px' }}>
+            <label htmlFor="mode-select" style={{ marginRight: '10px' }}>Switch Mode:</label>
+            <select
+              id="mode-select"
+              value={status.mode}
+              onChange={(e) => switchMode(e.target.value)}
+            >
+              {modeOptions.map(mode => (
+                <option key={mode} value={mode}>{mode}</option>
+              ))}
+            </select>
+          </div>
         </Container>
-
-
       </AppWrapper>
     </>
   );

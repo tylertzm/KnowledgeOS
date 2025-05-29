@@ -6,6 +6,7 @@ from llm_handler import LLMHandler
 from websearch_handler import WebSearchHandler
 import numpy as np
 from transcriptions import Transcriber
+from collections import defaultdict
 
 app = Flask(__name__)
 CORS(app, resources={
@@ -17,6 +18,14 @@ CORS(app, resources={
         "max_age": 3600,
         "supports_credentials": False  # Changed to False since we're using * for origins
     }
+})
+
+# Session-specific state
+sessions = defaultdict(lambda: {
+    "ai_mode_active": False,
+    "websearch_mode_active": False,
+    "latest_transcription": "",
+    "latest_response": "",
 })
 
 # Global state
@@ -36,46 +45,55 @@ def index():
 
 @app.route("/status")
 def status():
-    mode = "WebSearch" if websearch_mode_active else "AI" if ai_mode_active else "Transcription"
+    session_id = request.headers.get("Session-Id")
+    if not session_id:
+        return jsonify({"error": "Session-Id header is required"}), 400
+
+    session = sessions[session_id]
+    mode = "WebSearch" if session["websearch_mode_active"] else "AI" if session["ai_mode_active"] else "Transcription"
     return jsonify({
         "mode": mode,
-        "transcription": latest_transcription,
-        "response": latest_response
+        "transcription": session["latest_transcription"],
+        "response": session["latest_response"]
     })
 
 @app.route("/process", methods=["POST"])
 def process():
-    global ai_mode_active, websearch_mode_active, latest_transcription, latest_response
-    
+    session_id = request.headers.get("Session-Id")
+    if not session_id:
+        return jsonify({"error": "Session-Id header is required"}), 400
+
+    session = sessions[session_id]
     data = request.json
     text = data.get("text", "")
-    
+
     if not text:
         return jsonify({"error": "No text provided"}), 400
-        
-    latest_transcription = text
-    
+
+    session["latest_transcription"] = text
+
     if "ai mode" in text.lower():
-        ai_mode_active = True
-        websearch_mode_active = False
-        latest_response = "AI mode activated"
+        session["ai_mode_active"] = True
+        session["websearch_mode_active"] = False
+        session["latest_response"] = "AI mode activated"
     elif "web search mode" in text.lower():
-        ai_mode_active = False
-        websearch_mode_active = True
-        latest_response = "Web search mode activated"
-    elif websearch_mode_active and text.strip().endswith("?"):
+        session["ai_mode_active"] = False
+        session["websearch_mode_active"] = True
+        session["latest_response"] = "Web search mode activated"
+    elif session["websearch_mode_active"] and text.strip().endswith("?"):
         response = websearch_handler.search(text)
         if response:
-            latest_response = response
-    elif ai_mode_active:
+            session["latest_response"] = response
+    elif session["ai_mode_active"]:
         response = llm_handler.get_response(text)
         if response:
-            latest_response = response
+            session["latest_response"] = response
             
+    mode = "WebSearch" if session["websearch_mode_active"] else "AI" if session["ai_mode_active"] else "Transcription"
     return jsonify({
-        "mode": "WebSearch" if websearch_mode_active else "AI",
-        "transcription": latest_transcription,
-        "response": latest_response
+        "mode": mode,
+        "transcription": session["latest_transcription"],
+        "response": session["latest_response"]
     })
 
 # Add an OPTIONS handler for the /audio endpoint
