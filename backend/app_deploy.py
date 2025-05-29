@@ -77,6 +77,18 @@ def delete_inactive_sessions():
         console.print(f"[ERROR] Failed to delete inactive sessions: {e}", style="bold red")
         init_db()  # Reinitialize the database if the table is missing
 
+@app.before_first_request
+def initialize_database():
+    console.print("[INFO] Initializing database...", style="bold green")
+    try:
+        init_db()
+    except Exception as e:
+        console.print(f"[ERROR] Failed to initialize database: {e}", style="bold red")
+
+@app.before_request
+def cleanup_sessions():
+    delete_inactive_sessions()
+
 # Session-specific state
 sessions = defaultdict(lambda: {
     "ai_mode_active": False,
@@ -293,7 +305,10 @@ def handle_audio():
 @app.before_first_request
 def initialize_database():
     console.print("[INFO] Initializing database...", style="bold green")
-    init_db()
+    try:
+        init_db()
+    except Exception as e:
+        console.print(f"[ERROR] Failed to initialize database: {e}", style="bold red")
 
 @app.before_request
 def cleanup_sessions():
