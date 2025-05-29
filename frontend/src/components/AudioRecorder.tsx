@@ -5,6 +5,9 @@ interface AudioRecorderProps {
   onAudioData: (audioData: Float32Array) => void;
 }
 
+// Define your API base URL here or import it from your config
+const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:3000';
+
 export const AudioRecorder: React.FC<AudioRecorderProps> = ({ isListening, onAudioData }) => {
   const audioContextRef = useRef<AudioContext | null>(null);
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
@@ -44,7 +47,7 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({ isListening, onAud
         // Handle audio processing
         processor.onaudioprocess = (e) => {
           const inputData = e.inputBuffer.getChannelData(0);
-          onAudioData(inputData);
+          handleAudioProcess(inputData);
         };
 
         console.log('Audio recording initialized successfully');
@@ -73,6 +76,31 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({ isListening, onAud
       }
     };
   }, [isListening, onAudioData]);
+
+  const handleAudioProcess = async (inputData: Float32Array) => {
+    try {
+      const response = await fetch(`${API_BASE}/audio`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          audio: Array.from(inputData)
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      onAudioData(data);
+    } catch (error) {
+      console.error('Error sending audio data:', error);
+    }
+  };
 
   return null;
 };
