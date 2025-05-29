@@ -177,7 +177,7 @@ export const App: React.FC = () => {
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [status, setStatus] = useState<StatusResponse>({
     mode: 'OFFLINE',
-    transcription: 'Establishing neural connection...',
+    transcription: 'Tap globe to start recording...',
     response: ''
   });
   const [isConnected, setIsConnected] = useState(false);
@@ -233,19 +233,16 @@ export const App: React.FC = () => {
     const requestMicrophoneAccess = async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        setHasMicPermission(true);
-        // Stop the test stream
         stream.getTracks().forEach(track => track.stop());
         setStatus(prev => ({
           ...prev,
-          transcription: 'Click the orb to start recording'
+          transcription: 'Tap globe to start recording'
         }));
       } catch (error) {
         console.error('Microphone access denied:', error);
-        setHasMicPermission(false);
         setStatus(prev => ({
           ...prev,
-          transcription: 'Please enable microphone access to use voice features'
+          transcription: 'Please enable microphone access'
         }));
       }
     };

@@ -5,8 +5,7 @@ interface AudioRecorderProps {
   onAudioData: (audioData: Float32Array) => void;
 }
 
-// Define your API base URL here or import it from your config
-const API_BASE = process.env.REACT_APP_API_BASE || 'http://localhost:3000';
+const API_BASE = process.env.REACT_APP_API_URL || 'https://knowledgeos.onrender.com';
 
 export const AudioRecorder: React.FC<AudioRecorderProps> = ({ isListening, onAudioData }) => {
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -27,6 +26,7 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({ isListening, onAud
         });
         
         streamRef.current = stream;
+        console.log('Recording started - speak now');
         
         // Create audio context
         const audioContext = new AudioContext();
@@ -53,11 +53,15 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({ isListening, onAud
         console.log('Audio recording initialized successfully');
       } catch (error) {
         console.error('Error initializing audio recording:', error);
+        onAudioData(new Float32Array([0])); // Send empty data to trigger status update
       }
     };
 
     if (isListening) {
       initializeRecording();
+    } else {
+      // When stopped, update the message
+      onAudioData(new Float32Array([0])); // Send empty data to reset status
     }
 
     // Cleanup
@@ -79,13 +83,14 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({ isListening, onAud
 
   const handleAudioProcess = async (inputData: Float32Array) => {
     try {
+      console.log('Sending audio data to:', `${API_BASE}/audio`);
       const response = await fetch(`${API_BASE}/audio`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
-        credentials: 'include',
+        mode: 'cors',
         body: JSON.stringify({
           audio: Array.from(inputData)
         })
