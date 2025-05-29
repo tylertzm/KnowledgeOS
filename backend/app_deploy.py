@@ -32,7 +32,7 @@ CORS(app, resources={
 })
 
 # Global state
-ai_mode_active = True
+ai_mode_active = False
 websearch_mode_active = False
 latest_transcription = ""
 latest_response = ""

@@ -6,6 +6,7 @@ import { ThemeToggle } from './components/ThemeToggle';
 import { GlobalStyles } from './styles/GlobalStyles';
 import { StatusResponse } from './types';
 import { AudioRecorder } from './components/AudioRecorder';
+import { InfoIcon } from './components/InfoIcon';
 
 const AppWrapper = styled.div`
   height: 100vh;
@@ -176,7 +177,7 @@ console.log('Using API URL:', API_BASE);
 export const App: React.FC = () => {
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [status, setStatus] = useState<StatusResponse>({
-    mode: 'OFFLINE',
+    mode: 'Transcription',
     transcription: 'Tap globe to start recording...',
     response: ''
   });
@@ -307,6 +308,7 @@ export const App: React.FC = () => {
       <GlobalStyles />
       <AppWrapper>
         <BackgroundGlow />
+        <InfoIcon />
         <StatusBar 
           isConnected={isConnected} 
           statusText={isConnected ? 'Neural Link Active' : 'Connection Lost'} 
