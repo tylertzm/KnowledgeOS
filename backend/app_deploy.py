@@ -4,21 +4,27 @@ import os
 from config import console, GROQ_API_KEY
 from llm_handler import LLMHandler
 from websearch_handler import WebSearchHandler
+import numpy as np
+from transcriptions import Transcriber
 
 app = Flask(__name__)
 CORS(app, resources={
     r"/*": {
         "origins": [
+            # Main Vercel deployment
             "https://knowledgeos.vercel.app",
-            "knowledgeos-dnmsrlqxt-tylertzms-projects.vercel.app",
-            "https://knowledgeos-tylertzms-projects.vercel.app",
-            "https://knowledgeos-git-main-tylertzms-projects.vercel.app/",
+            # Preview deployments
+            r"https://*-tylertzms-projects.vercel.app",
+            r"https://*.vercel.app",
+            # Local development
             "http://localhost:3000",
+            # Firebase deployment
             "https://knowledgeos.web.app"
         ],
         "methods": ["GET", "POST", "OPTIONS"],
         "allow_headers": ["Content-Type", "Accept", "Authorization"],
-        "max_age": 3600
+        "max_age": 3600,
+        "supports_credentials": True
     }
 })
 
@@ -31,6 +37,7 @@ latest_response = ""
 # Initialize handlers
 llm_handler = LLMHandler()
 websearch_handler = WebSearchHandler()
+transcriber = Transcriber()
 
 @app.route("/")
 def index():
@@ -93,12 +100,62 @@ def handle_audio_options():
 def handle_audio():
     if request.method == "OPTIONS":
         return handle_audio_options()
-    # ...existing code...
+        
+    try:
+        data = request.json
+        if not data or 'audio' not in data:
+            return jsonify({
+                'error': 'No audio data received'
+            }), 400
 
-    if __name__ == "__main__":
-        if not GROQ_API_KEY:
-            console.print("[FATAL ERROR] GROQ_API_KEY environment variable not set.", style="bold red")
-            exit(1)
-            
-        port = int(os.environ.get("PORT", 5001))
-        app.run(host="0.0.0.0", port=port)
+        audio_data = data['audio']
+        
+        # Convert audio data to numpy array
+        audio_array = np.array(audio_data, dtype=np.float32)
+        
+        # Process the audio (transcribe)
+        transcription = transcriber.transcribe(audio_array)
+        
+        # Update global state
+        global latest_transcription, latest_response
+        latest_transcription = transcription
+        
+        # Process the transcription based on mode
+        if "ai mode" in transcription.lower():
+            ai_mode_active = True
+            websearch_mode_active = False
+            latest_response = "AI mode activated"
+        elif "web search mode" in transcription.lower():
+            ai_mode_active = False
+            websearch_mode_active = True
+            latest_response = "Web search mode activated"
+        elif websearch_mode_active and transcription.strip().endswith("?"):
+            response = websearch_handler.search(transcription)
+            if response:
+                latest_response = response
+        elif ai_mode_active:
+            response = llm_handler.get_response(transcription)
+            if response:
+                latest_response = response
+
+        return jsonify({
+            'success': True,
+            'transcription': transcription,
+            'response': latest_response,
+            'mode': "WebSearch" if websearch_mode_active else "AI"
+        })
+
+    except Exception as e:
+        console.print(f"[ERROR] Audio processing failed: {e}", style="bold red")
+        return jsonify({
+            'error': 'Failed to process audio',
+            'details': str(e)
+        }), 500
+
+if __name__ == "__main__":
+    if not GROQ_API_KEY:
+        console.print("[FATAL ERROR] GROQ_API_KEY environment variable not set.", style="bold red")
+        exit(1)
+        
+    port = int(os.environ.get("PORT", 5001))
+    app.run(host="0.0.0.0", port=port)
