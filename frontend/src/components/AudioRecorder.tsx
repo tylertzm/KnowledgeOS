@@ -83,14 +83,30 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({ isListening, onAud
 
   const handleAudioProcess = async (inputData: Float32Array) => {
     try {
+      console.log('Sending audio data to:', `${API_BASE}/audio`);
+      
+      // First check if endpoint is available
+      const checkResponse = await fetch(`${API_BASE}/audio`, {
+        method: 'OPTIONS',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        mode: 'cors'
+      });
+
+      if (!checkResponse.ok) {
+        throw new Error(`CORS check failed: ${checkResponse.status}`);
+      }
+
+      // Send actual audio data
       const response = await fetch(`${API_BASE}/audio`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
         },
         mode: 'cors',
-        cache: 'no-cache',
         body: JSON.stringify({
           audio: Array.from(inputData)
         })
@@ -103,9 +119,14 @@ export const AudioRecorder: React.FC<AudioRecorderProps> = ({ isListening, onAud
       }
 
       const data = await response.json();
+      console.log('Audio data processed successfully');
       onAudioData(data);
     } catch (error) {
-      console.error('Error sending audio data:', error);
+      console.error('Audio processing error:', {
+        message: error instanceof Error ? error.message : String(error),
+        url: API_BASE,
+        timestamp: new Date().toISOString()
+      });
     }
   };
 
