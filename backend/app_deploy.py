@@ -75,6 +75,7 @@ def delete_inactive_sessions():
         conn.close()
     except sqlite3.OperationalError as e:
         console.print(f"[ERROR] Failed to delete inactive sessions: {e}", style="bold red")
+        init_db()  # Reinitialize the database if the table is missing
 
 # Session-specific state
 sessions = defaultdict(lambda: {
@@ -299,7 +300,12 @@ def cleanup_sessions():
     delete_inactive_sessions()
 
 if __name__ == "__main__":
-    init_db()  # Ensure the database is initialized before the app starts
+    try:
+        init_db()  # Ensure the database is initialized before the app starts
+    except Exception as e:
+        console.print(f"[FATAL ERROR] Failed to initialize database: {e}", style="bold red")
+        exit(1)
+
     if not GROQ_API_KEY:
         console.print("[FATAL ERROR] GROQ_API_KEY environment variable not set.", style="bold red")
         exit(1)
