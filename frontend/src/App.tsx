@@ -331,7 +331,9 @@ export const App: React.FC = () => {
             onAudioData={handleAudioData}
           />
           <TextDisplay>
-            <ModeIndicator>{status.mode}</ModeIndicator>
+            <ModeIndicator>
+              {status.mode === 'Transcription' ? 'Multilingual Transcription' : status.mode}
+            </ModeIndicator>
             <Transcription isEmpty={!status.transcription}>
               {status.transcription || 'Listening for your voice...'}
             </Transcription>

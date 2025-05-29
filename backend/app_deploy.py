@@ -36,7 +36,7 @@ def index():
 
 @app.route("/status")
 def status():
-    mode = "WebSearch" if websearch_mode_active else "AI" if ai_mode_active else "Transcription(Multilingual!)"
+    mode = "WebSearch" if websearch_mode_active else "AI" if ai_mode_active else "Transcription"
     return jsonify({
         "mode": mode,
         "transcription": latest_transcription,
