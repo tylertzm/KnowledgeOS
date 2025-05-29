@@ -110,6 +110,18 @@ const TextDisplay = styled.div`
   }
 `;
 
+const ListeningIndicator = styled.div`
+  font-size: 1.1rem;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 1rem;
+  animation: loading-fade 1.5s ease-in-out infinite;
+
+  body.light-mode & {
+    color: rgba(29, 29, 31, 0.7);
+  }
+`;
+
 const ModeIndicator = styled.div`
   font-size: 0.9rem;
   font-weight: 500;
@@ -377,11 +389,16 @@ export const App: React.FC = () => {
             onAudioData={handleAudioData}
           />
           <TextDisplay>
+            {isRecording && (
+              <ListeningIndicator>
+                Listening for your voice...
+              </ListeningIndicator>
+            )}
             <ModeIndicator>
               {status.mode === 'Transcription' ? 'Multilingual Transcription' : status.mode}
             </ModeIndicator>
             <Transcription isEmpty={!status.transcription}>
-              {status.transcription || 'Listening for your voice...'}
+              {status.transcription || 'No transcription available yet.'}
             </Transcription>
             {status.response && ['AI', 'WebSearch'].includes(status.mode) && (
               <Response mode={status.mode.toLowerCase()}>
