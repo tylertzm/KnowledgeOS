@@ -167,7 +167,8 @@ const Response = styled.div<{ mode: string }>`
   }
 `;
 
-const API_BASE = process.env.REACT_APP_API_URL;
+const API_BASE = process.env.REACT_APP_API_URL || 'https://knowledgeos.onrender.com';
+
 console.log('Environment:', process.env.NODE_ENV);
 console.log('Using API URL:', API_BASE);
 
@@ -188,15 +189,20 @@ export const App: React.FC = () => {
   useEffect(() => {
     const fetchStatus = async () => {
       try {
-        console.log('Connecting to:', `${API_BASE}/status`);
-        const response = await fetch(`${API_BASE}/status`, {
+        const apiUrl = new URL('/status', API_BASE).toString();
+        console.log('Connecting to:', apiUrl);
+        
+        const response = await fetch(apiUrl, {
           headers: {
             'Accept': 'application/json',
             'Content-Type': 'application/json'
-          }
+          },
+          mode: 'cors'
         });
         
         if (!response.ok) {
+          const text = await response.text();
+          console.error('Response content:', text);
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         
