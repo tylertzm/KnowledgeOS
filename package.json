@@ -9,5 +9,8 @@
     "start": "cd backend && python app.py",
     "build": "cd frontend && npm install && npm run build",
     "dev": "cd frontend && npm start"
+  },
+  "dependencies": {
+    "@vercel/analytics": "^1.5.0"
   }
 }
