@@ -134,11 +134,18 @@ def handle_audio():
                 'error': 'Invalid audio data format'
             }), 400
 
-        # Convert audio data to numpy array with error handling
+        # Convert audio data to numpy array with error handling and detailed logging
         try:
             audio_array = np.array(audio_data, dtype=np.float32)
+            console.print(f"[DEBUG] Audio array shape: {audio_array.shape}", style="blue")
+            console.print(f"[DEBUG] Audio array dtype: {audio_array.dtype}", style="blue")
+            console.print(f"[DEBUG] Audio array range: [{audio_array.min()}, {audio_array.max()}]", style="blue")
+            console.print(f"[DEBUG] Non-zero values: {np.count_nonzero(audio_array)}/{audio_array.size}", style="blue")
         except Exception as e:
             console.print(f"[ERROR] Failed to convert audio data: {e}", style="bold red")
+            console.print(f"[DEBUG] Raw audio data type: {type(audio_data)}", style="yellow")
+            console.print(f"[DEBUG] Raw audio data length: {len(audio_data)}", style="yellow")
+            console.print(f"[DEBUG] First few values: {audio_data[:10]}", style="yellow")
             return jsonify({
                 'error': 'Failed to process audio data'
             }), 400
@@ -148,6 +155,13 @@ def handle_audio():
             console.print("[ERROR] Empty audio data", style="bold red")
             return jsonify({
                 'error': 'Empty audio data'
+            }), 400
+            
+        # Check if audio data contains actual signal
+        if np.allclose(audio_array, 0):
+            console.print("[WARNING] Audio data contains only zeros", style="yellow")
+            return jsonify({
+                'error': 'Silent audio data'
             }), 400
 
         console.print(f"[INFO] Processing audio data of length {len(audio_data)}", style="bold green")
