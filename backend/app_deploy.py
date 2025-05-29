@@ -69,6 +69,19 @@ def delete_inactive_sessions():
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
+        
+        # Check if the sessions table exists
+        cursor.execute("""
+            SELECT name FROM sqlite_master WHERE type='table' AND name='sessions';
+        """)
+        table_exists = cursor.fetchone()
+        
+        if not table_exists:
+            console.print("[INFO] 'sessions' table does not exist. Creating it now...", style="bold yellow")
+            init_db()  # Create the table if it doesn't exist
+            return
+        
+        # Delete inactive sessions if the table exists
         cutoff_time = datetime.now() - timedelta(minutes=30)  # Inactive for 30 minutes
         cursor.execute("DELETE FROM sessions WHERE last_active < ?", (cutoff_time,))
         conn.commit()
@@ -76,6 +89,11 @@ def delete_inactive_sessions():
     except sqlite3.OperationalError as e:
         console.print(f"[ERROR] Failed to delete inactive sessions: {e}", style="bold red")
         init_db()  # Reinitialize the database if the table is missing
+    except Exception as e:
+        console.print(f"[ERROR] Unexpected error during session cleanup: {e}", style="bold red")
+    finally:
+        if conn:
+            conn.close()
 
 @app.before_request
 def cleanup_sessions():
