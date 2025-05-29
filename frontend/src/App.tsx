@@ -199,9 +199,11 @@ export const App: React.FC = () => {
         const response = await fetch(apiUrl, {
           headers: {
             'Accept': 'application/json',
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Origin': window.location.origin
           },
-          mode: 'cors'
+          mode: 'cors',
+          cache: 'no-cache'
         });
         
         if (!response.ok) {
@@ -260,8 +262,12 @@ export const App: React.FC = () => {
       const response = await fetch(`${API_BASE}/audio`, {
         method: 'POST',
         headers: {
+          'Accept': 'application/json',
           'Content-Type': 'application/json',
+          'Origin': window.location.origin
         },
+        mode: 'cors',
+        cache: 'no-cache',
         body: JSON.stringify({
           audio: Array.from(audioData)
         })

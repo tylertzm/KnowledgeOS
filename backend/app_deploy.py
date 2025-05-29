@@ -10,24 +10,12 @@ from transcriptions import Transcriber
 app = Flask(__name__)
 CORS(app, resources={
     r"/*": {
-        "origins": [
-            # Main Vercel deployment
-            "https://knowledgeos.vercel.app",
-            # Preview deployments
-            r"https://*-tylertzms-projects.vercel.app",
-            r"https://*.vercel.app",
-            # Specific preview deployment
-            "https://knowledgeos-esjegthix-tylertzms-projects.vercel.app",
-            # Local development
-            "http://localhost:3000",
-            # Firebase deployment
-            "https://knowledgeos.web.app"
-        ],
+        "origins": "*",  # Allow all origins for now
         "methods": ["GET", "POST", "OPTIONS"],
-        "allow_headers": ["Content-Type", "Accept", "Authorization"],
+        "allow_headers": ["Content-Type", "Accept", "Authorization", "Origin", "X-Requested-With"],
+        "expose_headers": ["Content-Type", "Authorization"],
         "max_age": 3600,
-        "supports_credentials": True,
-        "expose_headers": ["Content-Type", "Authorization"]
+        "supports_credentials": False  # Changed to False since we're using * for origins
     }
 })
 
@@ -94,19 +82,12 @@ def process():
 @app.route('/audio', methods=['OPTIONS'])
 def handle_audio_options():
     response = jsonify({'status': 'ok'})
-    # Use the request's origin if it's in our allowed origins
-    origin = request.headers.get('Origin')
-    if origin in [
-        "https://knowledgeos.vercel.app",
-        "https://knowledgeos-esjegthix-tylertzms-projects.vercel.app",
-        "http://localhost:3000",
-        "https://knowledgeos.web.app"
-    ] or origin.endswith('-tylertzms-projects.vercel.app') or origin.endswith('.vercel.app'):
-        response.headers.add('Access-Control-Allow-Origin', origin)
-    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-    response.headers.add('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
-    response.headers.add('Access-Control-Allow-Credentials', 'true')
-    response.headers.add('Access-Control-Expose-Headers', 'Content-Type,Authorization')
+    origin = request.headers.get('Origin', '*')
+    response.headers.add('Access-Control-Allow-Origin', origin)
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type, Accept, Authorization, Origin, X-Requested-With')
+    response.headers.add('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+    response.headers.add('Access-Control-Max-Age', '3600')
+    response.headers.add('Access-Control-Expose-Headers', 'Content-Type, Authorization')
     return response, 200
 
 @app.route('/audio', methods=['POST'])
