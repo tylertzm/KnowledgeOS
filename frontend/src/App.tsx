@@ -5,6 +5,7 @@ import { StatusBar } from './components/StatusBar';
 import { ThemeToggle } from './components/ThemeToggle';
 import { GlobalStyles } from './styles/GlobalStyles';
 import { StatusResponse } from './types';
+import { AudioRecorder } from './components/AudioRecorder';
 
 const AppWrapper = styled.div`
   height: 100vh;
@@ -180,6 +181,7 @@ export const App: React.FC = () => {
     response: ''
   });
   const [isConnected, setIsConnected] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
 
   // Set initial theme class on mount
   useEffect(() => {
@@ -230,6 +232,39 @@ export const App: React.FC = () => {
     setIsDarkMode(prev => !prev);
   };
 
+  const handleAudioData = async (audioData: Float32Array) => {
+    try {
+      const response = await fetch(`${API_BASE}/audio`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          audio: Array.from(audioData)
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (data.transcription) {
+        setStatus(prev => ({
+          ...prev,
+          transcription: data.transcription,
+          response: data.response || prev.response
+        }));
+      }
+    } catch (error) {
+      console.error('Error sending audio data:', error);
+    }
+  };
+
+  const toggleRecording = () => {
+    setIsRecording(prev => !prev);
+  };
+
   return (
     <>
       <GlobalStyles />
@@ -243,8 +278,12 @@ export const App: React.FC = () => {
         
         <Container>
           <SiriOrb 
-            isListening={['AI', 'WebSearch'].includes(status.mode)} 
-            onClick={toggleTheme}
+            isListening={isRecording} 
+            onClick={toggleRecording}
+          />
+          <AudioRecorder
+            isListening={isRecording}
+            onAudioData={handleAudioData}
           />
           <TextDisplay>
             <ModeIndicator>{status.mode}</ModeIndicator>
