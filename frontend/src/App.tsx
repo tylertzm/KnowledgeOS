@@ -276,6 +276,12 @@ export const App: React.FC = () => {
   const modeOptions = ['Transcription', 'AI', 'WebSearch'];
 
   const switchMode = (newMode: string) => {
+    // Flash effect for mode switch
+    document.body.classList.add('flash-mode');
+    setTimeout(() => {
+      document.body.classList.remove('flash-mode');
+    }, 500); // Flash for 0.5 seconds
+
     setStatus(prev => ({
       ...prev,
       mode: newMode as StatusResponse['mode'],
