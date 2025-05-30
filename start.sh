@@ -14,6 +14,7 @@ command_exists() {
 }
 
 # Check for required commands
+
 if ! command_exists python3; then
     echo -e "${RED}Error: python3 is not installed${NC}"
     exit 1
